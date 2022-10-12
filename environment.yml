@@ -1,0 +1,13 @@
+# This environment runs arpeggio.
+
+name: base
+channels:
+  - bioconda
+dependencies:
+  - abnumber
+  - pip
+  - pip:
+      - nanome==0.38.7
+      # - ABlooper
+      - git+https://github.com/oxpig/ANARCI@c2fd0f7
+      - biopython

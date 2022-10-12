@@ -15,7 +15,7 @@
         "PLUGIN_NAME": "[wip]-antibodies"
       },
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
     }
   ]
 }

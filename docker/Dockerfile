@@ -1,4 +1,4 @@
-FROM nanome/plugin-env
+FROM continuumio/miniconda3
 
 ENV ARGS=''
 WORKDIR /app
@@ -6,8 +6,8 @@ WORKDIR /app
 # TODO: install non-pip dependencies here
 
 ARG CACHEBUST
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY environment.yml .
+RUN conda env update
 
 COPY . .
 
