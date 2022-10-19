@@ -89,7 +89,10 @@ class Antibodies(nanome.AsyncPluginInstance):
         cdr_seq = getattr(abchain, seq_attr_name)
         cdr_residues = []
         for chain in comp.chains:
-            chain_seq = ''.join([protein_letters_3to1[res.name.title()] for res in chain.residues])
+            try:
+                chain_seq = ''.join([protein_letters_3to1[res.name.title()] for res in chain.residues])
+            except KeyError:
+                continue
             if cdr_seq in chain_seq:
                 residues = list(chain.residues)
                 # Find the subset of the chain that comprises CDR Loop
