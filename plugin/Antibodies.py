@@ -125,7 +125,8 @@ class Antibodies(nanome.AsyncPluginInstance):
         return seq
 
 def main():
-    plugin = nanome.Plugin('Antibodies', 'Visualize and build antibody proteins', 'other', False)
+    description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
+    plugin = nanome.Plugin('Antibodies', description, 'other', False)
     plugin.set_plugin_class(Antibodies)
     plugin.run()
 
