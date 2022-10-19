@@ -15,6 +15,7 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def on_run(self):
         # Get selected antibody complex
         run_btn = enums.PluginListButtonType.run
+        Logs.debug("Loading Complex")
         self.set_plugin_list_button(run_btn, 'Loading Complex', False)
         comp_list = await self.request_complex_list()
         shallow_comp = next((cmp for cmp in comp_list if cmp.get_selected()), None)
@@ -25,6 +26,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         comp = (await self.request_complexes([shallow_comp.index]))[0]
 
         # Set color scheme to IMGT
+        Logs.debug("Coloring complex")
         self.set_plugin_list_button(run_btn, 'Coloring...', False)
         self.update_structures_shallow(list(comp.atoms))
         self.apply_color_scheme(
@@ -35,6 +37,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         comp.set_all_selected(False)
         
         # Highlight and zoom in on cdr3 loop
+        Logs.debug("Finding loops...")
         self.set_plugin_list_button(run_btn, 'Finding loops...', False)
         cdr1_residues = self.get_cdr1_residues(comp)
         cdr2_residues = self.get_cdr2_residues(comp)
@@ -44,8 +47,9 @@ class Antibodies(nanome.AsyncPluginInstance):
             middle_residue = cdr_residues[len(cdr_residues)//2]
             middle_residue.labeled = True
             middle_residue.label_text = f"CDR{i + 1}"
-            # Select CDR residues 
-            self.set_plugin_list_button(run_btn, 'Zooming...', False)
+            # Select CDR residues
+            Logs.debug("Formatting...")
+            self.set_plugin_list_button(run_btn, 'Formatting...', False)
             for res in cdr_residues:
                 for atom in res.atoms:
                     atom.selected = True
