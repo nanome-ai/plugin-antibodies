@@ -48,14 +48,14 @@ class Antibodies(nanome.AsyncPluginInstance):
             enums.ColorSchemeTarget.All,
             False)
 
+        Logs.debug("Formatting...")
+        self.set_plugin_list_button(run_btn, 'Formatting...', False)
         for i, cdr_residues in enumerate([cdr1_residues, cdr2_residues, cdr3_residues]):
             # Add label to middle residue
             middle_residue = cdr_residues[len(cdr_residues)//2]
             middle_residue.labeled = True
             middle_residue.label_text = f"CDR{i + 1}"
             # Select CDR residues
-            Logs.debug("Formatting...")
-            self.set_plugin_list_button(run_btn, 'Formatting...', False)
             for res in cdr_residues:
                 for atom in res.atoms:
                     atom.selected = True
