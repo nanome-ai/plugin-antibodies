@@ -3,6 +3,7 @@ import nanome
 from nanome.util import async_callback, Logs, enums
 
 from abnumber import Chain as AbChain
+from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
 
 
@@ -24,8 +25,21 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.set_plugin_list_button(run_btn, 'Run', True)
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
+        comp.set_all_selected(False)
+        # Highlight and zoom in on cdr3 loop
+        Logs.debug("Finding loops...")
+        self.set_plugin_list_button(run_btn, 'Finding loops...', False)
+        try:
+            cdr1_residues = self.get_cdr1_residues(comp)
+            cdr2_residues = self.get_cdr2_residues(comp)
+            cdr3_residues = self.get_cdr3_residues(comp)
+        except ChainParseError as e:
+            msg = "Please make sure selected structure is an antibody."
+            self.send_notification(enums.NotificationTypes.error, msg)
+            self.set_plugin_list_button(run_btn, 'Run', True)
+            return
 
-        # Set color scheme to IMGT
+        # Set color scheme to IMGT after step above confirms complex is an antibody
         Logs.debug("Coloring complex")
         self.set_plugin_list_button(run_btn, 'Coloring...', False)
         self.update_structures_shallow(list(comp.atoms))
@@ -34,14 +48,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             enums.ColorSchemeTarget.All,
             False)
 
-        comp.set_all_selected(False)
-        
-        # Highlight and zoom in on cdr3 loop
-        Logs.debug("Finding loops...")
-        self.set_plugin_list_button(run_btn, 'Finding loops...', False)
-        cdr1_residues = self.get_cdr1_residues(comp)
-        cdr2_residues = self.get_cdr2_residues(comp)
-        cdr3_residues = self.get_cdr3_residues(comp)
         for i, cdr_residues in enumerate([cdr1_residues, cdr2_residues, cdr3_residues]):
             # Add label to middle residue
             middle_residue = cdr_residues[len(cdr_residues)//2]
