@@ -68,7 +68,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         for i, cdr_residues in enumerate([cdr1_residues, cdr2_residues, cdr3_residues]):
             # Add label to middle residue
             cdr_val = f"CDR{i + 1}"
-            middle_residue = cdr_residues[(len(cdr_residues)//2) +1]
+            middle_residue = cdr_residues[(len(cdr_residues) // 2) + 1]
             middle_residue.labeled = True
             middle_residue.label_text = cdr_val
             # color CDR residues
@@ -80,7 +80,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         cdr_residues = cdr1_residues + cdr2_residues + cdr3_residues
         atom_iterchain = itertools.chain(*[res.atoms for res in cdr_residues])
         self.update_structures_shallow(list(atom_iterchain))
-        
+
         # Zoom to CDR3 loop
         await self.zoom_on_structures(cdr1_residues)
         self.set_plugin_list_button(run_btn, 'Run', True)
@@ -103,7 +103,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     def _get_cdr_residues(self, comp, cdr: str):
         """Get nanome residues corresponding to provided cdr name.
-        
+
         valid cdr names are 'cdr1', 'cdr2', and 'cdr3'
         """
         if cdr not in ['cdr1', 'cdr2', 'cdr3']:
@@ -129,10 +129,10 @@ class Antibodies(nanome.AsyncPluginInstance):
                 residues = list(chain.residues)
                 # Find the subset of the chain that comprises CDR Loop
                 for idx in range(len(residues) - len(cdr_seq) + 1):
-                    residue_sublist = residues[idx:idx+len(cdr_seq)]
+                    residue_sublist = residues[idx:idx + len(cdr_seq)]
                     residue_sublist_seq = ''.join([
                         protein_letters_3to1[res.name.title()
-                    ] for res in residue_sublist])
+                                             ] for res in residue_sublist])
                     if residue_sublist_seq == cdr_seq:
                         cdr_residues = residue_sublist
                         break
@@ -143,6 +143,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             sequence = next(SeqIO.parse(handle, "pdb-atom"))
         seq = str(sequence.seq)
         return seq
+
 
 def main():
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
