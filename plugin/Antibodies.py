@@ -10,6 +10,7 @@ from Bio import SeqIO, SeqUtils
 from enum import Enum
 
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
+run_btn = enums.PluginListButtonType.run
 
 
 class IMGTCDRColorScheme(Enum):
@@ -32,7 +33,6 @@ class Antibodies(nanome.AsyncPluginInstance):
     @async_callback
     async def on_run(self):
         # Get selected antibody complex
-        run_btn = enums.PluginListButtonType.run
         Logs.debug("Loading Complex")
         self.set_plugin_list_button(run_btn, 'Loading Complex', False)
         comp_list = await self.request_complex_list()
@@ -46,33 +46,24 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.set_plugin_list_button(run_btn, 'Run', True)
         Logs.debug("Done")
 
-    def validate_antibody(self, comp):
-        # Make sure at least one chain can be parsed with ABChain
-        for chain in comp.chains:
-            seq_str = self.get_sequence_from_struct(chain)
-            try:
-                abchain = AbChain(seq_str, scheme='imgt')
-                if abchain:
-                    return True
-            except ChainParseError as e:
-                continue
-            return False
-
     async def highlight_cdr_loops(self, comp):
         if not self.validate_antibody(comp):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
 
         # Make entire complex Grey.
-        Logs.debug("Making Complex Grey.")
+        Logs.debug("Making Complex Grey")
+        self.set_plugin_list_button(run_btn, 'Coloring...', False)
         for residue in comp.residues:
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.color = Color.Grey()
+
         comp.set_all_selected(False)
         self.update_structures_deep([comp])
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
+        self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = self.get_sequence_from_struct(chain)
@@ -129,6 +120,19 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.update_structures_deep(residues)
             # Zoom to CDR3 loop
             await self.zoom_on_structures(residues)
+        self.set_plugin_list_button(run_btn, 'Done', False)
+
+    def validate_antibody(self, comp):
+        # Make sure at least one chain can be parsed with ABChain
+        for chain in comp.chains:
+            seq_str = self.get_sequence_from_struct(chain)
+            try:
+                abchain = AbChain(seq_str, scheme='imgt')
+                if abchain:
+                    return True
+            except ChainParseError as e:
+                continue
+            return False
 
     def get_cdr1_residues(self, struc):
         cdr_name = 'cdr1'
