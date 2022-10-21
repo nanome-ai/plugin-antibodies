@@ -1,10 +1,24 @@
 import tempfile
 import nanome
-from nanome.util import async_callback, Logs, enums
+from nanome.util import async_callback, Color, Logs, enums
 
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
+
+from enum import Enum
+
+
+class IMGTColorScheme1(Enum):
+    CDR1 = '#C80000'
+    CDR2 = '#FFA900'
+    CDR3 = '#9C41D7'
+
+
+class IMGTColorScheme1(Enum):
+    CDR1 = '#6060E4'
+    CDR2 = '#46D500'
+    CDR3 = '#3F9D3F'
 
 
 class Antibodies(nanome.AsyncPluginInstance):
@@ -25,8 +39,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.set_plugin_list_button(run_btn, 'Run', True)
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
-        comp.set_all_selected(False)
-        # Highlight and zoom in on cdr3 loop
+
         Logs.debug("Finding loops...")
         self.set_plugin_list_button(run_btn, 'Finding loops...', False)
         try:
@@ -49,20 +62,29 @@ class Antibodies(nanome.AsyncPluginInstance):
             False)
 
         Logs.debug("Formatting...")
+        comp.set_all_selected(False)
         self.set_plugin_list_button(run_btn, 'Formatting...', False)
+        color_scheme = IMGTColorScheme1
         for i, cdr_residues in enumerate([cdr1_residues, cdr2_residues, cdr3_residues]):
             # Add label to middle residue
-            middle_residue = cdr_residues[len(cdr_residues)//2]
+            cdr_val = f"CDR{i + 1}"
+            middle_residue = cdr_residues[(len(cdr_residues)//2) +1]
             middle_residue.labeled = True
-            middle_residue.label_text = f"CDR{i + 1}"
-            # Select CDR residues
+            middle_residue.label_text = cdr_val
+            # color CDR residues
+            color_hex = getattr(color_scheme, cdr_val)
             for res in cdr_residues:
                 for atom in res.atoms:
-                    atom.selected = True
-        await self.update_structures_deep([comp])
+                    atom.color = Color(whole_num=color_hex)
+        import itertools
+        cdr_residues = cdr1_residues + cdr2_residues + cdr3_residues
+        atom_iterchain = itertools.chain(*[res.atoms for res in cdr_residues])
+        self.update_structures_shallow(list(atom_iterchain))
+        
         # Zoom to CDR3 loop
-        await self.zoom_on_structures(cdr3_residues)
+        await self.zoom_on_structures(cdr1_residues)
         self.set_plugin_list_button(run_btn, 'Run', True)
+        Logs.debug("Done")
 
     def get_cdr1_residues(self, comp):
         cdr_name = 'cdr1'
@@ -115,8 +137,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                         cdr_residues = residue_sublist
                         break
         return cdr_residues
-
-        
 
     def get_sequence_from_pdb(self, pdb_filepath):
         with open(pdb_filepath) as handle:
