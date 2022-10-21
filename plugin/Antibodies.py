@@ -12,16 +12,16 @@ from enum import Enum
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 
 
-class IMGTColorScheme1(Enum):
-    CDR1 = Color(200, 0, 0)
-    CDR2 = Color(255, 169, 0)
-    CDR3 = Color(156, 65, 215)
-
-
-class IMGTColorScheme2(Enum):
-    CDR1 = Color(96, 96, 228)
-    CDR2 = Color(70, 213, 0)
-    CDR3 = Color(63, 157, 63)
+class IMGTCDRColorScheme(Enum):
+    """
+    Source: https://www.imgt.org/IMGTScientificChart/RepresentationRules/colormenu.php#h1_26
+    """
+    HEAVY_CDR1 = Color(200, 0, 0)
+    HEAVY_CDR2 = Color(255, 169, 0)
+    HEAVY_CDR3 = Color(156, 65, 215)
+    LIGHT_CDR1 = Color(96, 96, 228)
+    LIGHT_CDR2 = Color(70, 213, 0)
+    LIGHT_CDR3 = Color(63, 157, 63)
 
 
 class Antibodies(nanome.AsyncPluginInstance):
@@ -49,14 +49,18 @@ class Antibodies(nanome.AsyncPluginInstance):
         Logs.debug("Done")
 
     async def check_chains(self, comp):
+        # Make entire complex Grey.
+        Logs.debug("Making Complex Grey.")
         for residue in comp.residues:
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.color = Color.Grey()
         comp.set_all_selected(False)
-        await self.update_structures_deep([comp])
+        self.update_structures_deep([comp])
+        # Loop through chain and color cdr loops
+        Logs.debug("Processing Chains.")
         for chain in comp.chains:
-            Logs.message(f"Chain {chain.name}")
+            Logs.debug(f"Chain {chain.name}")
             seq_str = self.get_sequence_from_struct(chain)
             if not seq_str:
                 Logs.warning(f"Unable to sequence chain {chain.name}")
@@ -64,19 +68,29 @@ class Antibodies(nanome.AsyncPluginInstance):
             abchain = AbChain(seq_str, scheme='imgt')
             cdr3_seq = abchain.cdr3_seq
             if not cdr3_seq:
-                Logs.message(f"No CDR3 in chain {chain.name}")
+                Logs.debug(f"No CDR3 in chain {chain.name}")
                 continue
-            
             cdr3_residues = self.get_cdr3_residues(chain)
-            cdr3_atoms = itertools.chain(*[res.atoms for res in cdr3_residues])
+            # cdr3_atoms = itertools.chain(*[res.atoms for res in cdr3_residues])
+            chain_type = abchain.chain_type
+            if chain_type == 'H':
+                cdr3_color = IMGTCDRColorScheme.HEAVY_CDR3.value
+            else:
+                cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
             
+            # Add label to middle residue
+            cdr_val = f"CDR{chain_type}3"
+            middle_residue = cdr3_residues[(len(cdr3_residues) // 2)]
+            middle_residue.labeled = True
+            middle_residue.label_text = cdr_val
+
             for res in cdr3_residues:
                 if res.ribboned:
-                    res.ribbon_color = IMGTColorScheme1.CDR3.value
+                    res.ribbon_color = cdr3_color
 
                 for atom in res.atoms:
                     atom.selected = True
-                    atom.color =IMGTColorScheme1.CDR3.value
+                    atom.color = cdr3_color
 
             self.update_structures_deep(cdr3_residues)
 
@@ -110,7 +124,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         for i, cdr_residues in enumerate([cdr1_residues, cdr2_residues, cdr3_residues]):
             # Add label to middle residue
             cdr_val = f"CDR{i + 1}"
-            middle_residue = cdr_residues[(len(cdr_residues) // 2) + 1]
+            middle_residue = cdr_residues[(len(cdr_residues) // 2)]
             middle_residue.labeled = True
             middle_residue.label_text = cdr_val
             # color CDR residues
