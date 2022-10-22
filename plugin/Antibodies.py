@@ -23,6 +23,11 @@ class IMGTCDRColorScheme(Enum):
     LIGHT_CDR1 = Color(96, 96, 228)
     LIGHT_CDR2 = Color(70, 213, 0)
     LIGHT_CDR3 = Color(63, 157, 63)
+    # Added by us
+    FR1 = Color(211, 211, 211)
+    FR2 = Color(189, 189, 189)
+    FR3 = Color(158, 158, 158)
+    FR4 = Color(125, 125, 125)
 
 
 class Antibodies(nanome.AsyncPluginInstance):
@@ -50,7 +55,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         if not self.validate_antibody(comp):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
-
+        
         # Make entire complex Grey.
         Logs.debug("Making Complex Grey")
         self.set_plugin_list_button(run_btn, 'Coloring...', False)
@@ -59,6 +64,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             for atom in residue.atoms:
                 atom.color = Color.Grey()
 
+        self.set_plugin_list_button(run_btn, 'Coloring...', False)
         comp.set_all_selected(False)
         self.update_structures_deep([comp])
         # Loop through chain and color cdr loops
@@ -85,10 +91,18 @@ class Antibodies(nanome.AsyncPluginInstance):
                 cdr1_residues = self.get_cdr1_residues(chain)
                 cdr2_residues = self.get_cdr2_residues(chain)
                 cdr3_residues = self.get_cdr3_residues(chain)
+                fr1_residues = self.get_fr1_residues(chain)
+                fr2_residues = self.get_fr2_residues(chain)
+                fr3_residues = self.get_fr3_residues(chain)
+                fr4_residues = self.get_fr4_residues(chain)
             except ChainParseError as e:
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
-            
+            fr1_color = IMGTCDRColorScheme.FR1.value
+            fr2_color = IMGTCDRColorScheme.FR2.value
+            fr3_color = IMGTCDRColorScheme.FR3.value
+            fr4_color = IMGTCDRColorScheme.FR4.value
+
             chain_type = abchain.chain_type
             if chain_type == 'H':
                 cdr1_color = IMGTCDRColorScheme.HEAVY_CDR1.value
@@ -99,27 +113,33 @@ class Antibodies(nanome.AsyncPluginInstance):
                 cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
                 cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
             
-            cdr_residue_list = [cdr1_residues, cdr2_residues, cdr3_residues]
+            cdr_residue_lists = [cdr1_residues, cdr2_residues, cdr3_residues]
+            fr_residue_lists = [fr1_residues, fr2_residues, fr3_residues, fr4_residues]
             cdr_colors = [cdr1_color, cdr2_color, cdr3_color]
+            fr_colors = [fr1_color, fr2_color, fr3_color, fr4_color]
+
+            residue_lists = cdr_residue_lists + fr_residue_lists
+            chain_colors = cdr_colors +  fr_colors
             
             i = 0
-            for res_set, cdr_color in zip(cdr_residue_list, cdr_colors):
+            for residue_list, res_color in zip(residue_lists, chain_colors):
                 # Add label to middle residue
-                cdr_val = f"CDR{chain_type}{i + 1}"
-                middle_residue = res_set[(len(res_set) // 2)]
+                # The last 4 values are Fr1, Fr2, Fr3, Fr4
+                if i < len(list(residue_lists)) - 4:
+                    label_val = f"CDR{chain_type}{i + 1}"
+                else:
+                    label_val = f"FR{chain_type}{i + 1}"
+                middle_residue = residue_list[(len(residue_list) // 2)]
                 middle_residue.labeled = True
-                middle_residue.label_text = cdr_val
+                middle_residue.label_text = label_val
                 # Set residue and atom colors
-                for res in res_set:
-                    res.ribbon_color = cdr_color
+                for res in residue_list:
+                    res.ribbon_color = res_color
                     for atom in res.atoms:
-                        atom.color = cdr_color
+                        atom.color = res_color
                 i += 1
+                self.update_structures_deep(residue_list)
             # Get residues from list of lists
-            residues = list(itertools.chain.from_iterable(cdr_residue_list))
-            self.update_structures_deep(residues)
-            # Zoom to CDR3 loop
-            await self.zoom_on_structures(residues)
         self.set_plugin_list_button(run_btn, 'Done', False)
 
     def validate_antibody(self, comp):
@@ -149,25 +169,33 @@ class Antibodies(nanome.AsyncPluginInstance):
         residues = self._get_cdr_residues(struc, cdr_name)
         return residues
 
-    def cdr_in_chain(self, chain_seq, cdr) -> bool:
-        if cdr not in ['cdr1', 'cdr2', 'cdr3']:
-            raise ValueError(f"Invalid cdr value: {cdr}. Valid choices are 'cdr1', 'cdr2', and 'cdr3'")
-        abchain = AbChain(chain_seq)
-        cdr_name = f'{cdr}_seq'
-        cdr_seq = getattr(abchain, cdr_name)
-        return cdr_seq in chain_seq
+    def get_fr1_residues(self, struc):
+        fr_name = 'fr1'
+        residues = self._get_cdr_residues(struc, fr_name)
+        return residues
+
+    def get_fr2_residues(self, struc):
+        fr_name = 'fr2'
+        residues = self._get_cdr_residues(struc, fr_name)
+        return residues
+    
+    def get_fr3_residues(self, struc):
+        fr_name = 'fr3'
+        residues = self._get_cdr_residues(struc, fr_name)
+        return residues
+    
+    def get_fr4_residues(self, struc):
+        fr_name = 'fr4'
+        residues = self._get_cdr_residues(struc, fr_name)
+        return residues
 
     def _get_cdr_residues(self, chain, cdr: str):
         """Get nanome residues corresponding to provided cdr name.
 
         valid cdr names are 'cdr1', 'cdr2', and 'cdr3'
         """
-        if cdr not in ['cdr1', 'cdr2', 'cdr3']:
+        if cdr not in ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']:
             raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are 'cdr1', 'cdr2', and 'cdr3'")
-        # pdb_file = tempfile.NamedTemporaryFile(suffix=".pdb", dir=self.temp_dir.name)
-        # pdb_file = pdb_file.name
-        # comp.io.to_pdb(path=pdb_file)
-
         seq_str = self.get_sequence_from_struct(chain)
         abchain = AbChain(seq_str, scheme='imgt')
 
