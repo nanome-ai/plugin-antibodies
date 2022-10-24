@@ -59,11 +59,9 @@ class Antibodies(nanome.AsyncPluginInstance):
         for residue in comp.residues:
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
-                atom.color = Color.Grey()
+                atom.atom_color = Color.Grey()
 
-        self.set_plugin_list_button(run_btn, 'Coloring...', False)
         comp.set_all_selected(False)
-        self.update_structures_deep([comp])
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
@@ -133,9 +131,9 @@ class Antibodies(nanome.AsyncPluginInstance):
                 for res in residue_list:
                     res.ribbon_color = res_color
                     for atom in res.atoms:
-                        atom.color = res_color
+                        atom.atom_color = res_color
                 i += 1
-            self.update_structures_deep(itertools.chain.from_iterable(residue_lists))
+        self.update_structures_deep(comp.chains)
         self.set_plugin_list_button(run_btn, 'Done', False)
 
     def label_residue_set(self, residue_list, label_text):
