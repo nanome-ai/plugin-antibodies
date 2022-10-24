@@ -24,10 +24,7 @@ class IMGTCDRColorScheme(Enum):
     LIGHT_CDR2 = Color(70, 213, 0)
     LIGHT_CDR3 = Color(63, 157, 63)
     # Added by us
-    FR1 = Color(211, 211, 211)
-    FR2 = Color(189, 189, 189)
-    FR3 = Color(158, 158, 158)
-    FR4 = Color(125, 125, 125)
+    FR = Color.White()
 
 
 class Antibodies(nanome.AsyncPluginInstance):
@@ -98,10 +95,10 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
-            fr1_color = IMGTCDRColorScheme.FR1.value
-            fr2_color = IMGTCDRColorScheme.FR2.value
-            fr3_color = IMGTCDRColorScheme.FR3.value
-            fr4_color = IMGTCDRColorScheme.FR4.value
+            fr1_color = IMGTCDRColorScheme.FR.value
+            fr2_color = IMGTCDRColorScheme.FR.value
+            fr3_color = IMGTCDRColorScheme.FR.value
+            fr4_color = IMGTCDRColorScheme.FR.value
 
             chain_type = abchain.chain_type
             if chain_type == 'H':
@@ -125,22 +122,27 @@ class Antibodies(nanome.AsyncPluginInstance):
             for residue_list, res_color in zip(residue_lists, chain_colors):
                 # Add label to middle residue
                 # The last 4 values are Fr1, Fr2, Fr3, Fr4
+                # This should be cleaned up a bit
                 if i < len(list(residue_lists)) - 4:
                     label_val = f"CDR{chain_type}{i + 1}"
                 else:
-                    label_val = f"FR{chain_type}{i + 1}"
-                middle_residue = residue_list[(len(residue_list) // 2)]
-                middle_residue.labeled = True
-                middle_residue.label_text = label_val
+                    number = i - 2
+                    label_val = f"FR{chain_type}{number}"
+                self.label_residue_set(residue_list, label_val)
                 # Set residue and atom colors
                 for res in residue_list:
                     res.ribbon_color = res_color
                     for atom in res.atoms:
                         atom.color = res_color
                 i += 1
-                self.update_structures_deep(residue_list)
-            # Get residues from list of lists
+            self.update_structures_deep(itertools.chain.from_iterable(residue_lists))
         self.set_plugin_list_button(run_btn, 'Done', False)
+
+    def label_residue_set(self, residue_list, label_text):
+        """Add label to middle residue in residue list."""
+        middle_residue = residue_list[(len(residue_list) // 2)]
+        middle_residue.labeled = True
+        middle_residue.label_text = label_text
 
     def validate_antibody(self, comp):
         # Make sure at least one chain can be parsed with ABChain
