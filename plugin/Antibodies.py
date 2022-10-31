@@ -35,6 +35,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.menu = ui.Menu()
         self.menu.root.layout_orientation = enums.LayoutTypes.horizontal
+        self.menu.title = "Antibody Regions"
     
     @async_callback
     async def on_run(self):
@@ -169,19 +170,19 @@ class Antibodies(nanome.AsyncPluginInstance):
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
         
         ln_cdr1 = ln_chain.create_child_node()
-        cdr1_btn = ln_cdr1.add_new_button("CDR1")
+        cdr1_btn = ln_cdr1.add_new_button(f"CDR{abchain.chain_type}1")
         cdr1_btn.toggle_on_press = True
         cdr1_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr1_residues))
 
         ln_cdr2 = ln_chain.create_child_node()
-        cdr2_btn = ln_cdr2.add_new_button("CDR2")
+        cdr2_btn = ln_cdr2.add_new_button(f"CDR{abchain.chain_type}2")
         cdr2_btn.toggle_on_press = True
         cdr2_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr2_residues))
 
         ln_cdr3 = ln_chain.create_child_node()
-        cdr3_btn = ln_cdr3.add_new_button("CDR3")
+        cdr3_btn = ln_cdr3.add_new_button(f"CDR{abchain.chain_type}3")
         cdr3_btn.toggle_on_press = True
         cdr3_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
