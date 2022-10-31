@@ -36,7 +36,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.menu = ui.Menu()
         self.menu.root.layout_orientation = enums.LayoutTypes.horizontal
         self.menu.title = "Antibody Regions"
-    
+
     @async_callback
     async def on_run(self):
         # Get selected antibody complex
@@ -81,13 +81,13 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.warning(f"Could not parse Chain {chain.name}")
                 continue
-            
+
             cdr3_seq = abchain.cdr3_seq
             if not cdr3_seq:
                 Logs.debug(f"No CDR3 in chain {chain.name}")
                 continue
 
-            try:    
+            try:
                 cdr1_residues = self.get_cdr1_residues(chain)
                 cdr2_residues = self.get_cdr2_residues(chain)
                 cdr3_residues = self.get_cdr3_residues(chain)
@@ -98,7 +98,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
-            
+
             # Update menu
             self.add_menu_chain_column(self.menu, chain, abchain)
 
@@ -116,15 +116,15 @@ class Antibodies(nanome.AsyncPluginInstance):
                 cdr1_color = IMGTCDRColorScheme.LIGHT_CDR1.value
                 cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
                 cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
-            
+
             cdr_residue_lists = [cdr1_residues, cdr2_residues, cdr3_residues]
             fr_residue_lists = [fr1_residues, fr2_residues, fr3_residues, fr4_residues]
             cdr_colors = [cdr1_color, cdr2_color, cdr3_color]
             fr_colors = [fr1_color, fr2_color, fr3_color, fr4_color]
 
             residue_lists = cdr_residue_lists + fr_residue_lists
-            chain_colors = cdr_colors +  fr_colors
-            
+            chain_colors = cdr_colors + fr_colors
+
             i = 0
             for residue_list, res_color in zip(residue_lists, chain_colors):
                 # Add label to middle residue
@@ -150,7 +150,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)
-    
+
     def on_cdr_btn_pressed(self, residue_list, btn):
         # Select atoms
         for atom in itertools.chain(*[res.atoms for res in residue_list]):
@@ -168,7 +168,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         cdr_residues = cdr1_residues + cdr2_residues + cdr3_residues
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
-        
+
         ln_cdr1 = ln_chain.create_child_node()
         cdr1_btn = ln_cdr1.add_new_button(f"CDR{abchain.chain_type}1")
         cdr1_btn.toggle_on_press = True
@@ -229,12 +229,12 @@ class Antibodies(nanome.AsyncPluginInstance):
         fr_name = 'fr2'
         residues = self._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
-    
+
     def get_fr3_residues(self, struc, abchain=None):
         fr_name = 'fr3'
         residues = self._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
-    
+
     def get_fr4_residues(self, struc, abchain=None):
         fr_name = 'fr4'
         residues = self._get_region_residues(struc, fr_name, abchain=abchain)
@@ -275,7 +275,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             sequence = next(SeqIO.parse(handle, "pdb-atom"))
         seq = str(sequence.seq)
         return seq
-    
+
     def get_sequence_from_struct(self, struct):
         try:
             chain_seq = ''.join([
