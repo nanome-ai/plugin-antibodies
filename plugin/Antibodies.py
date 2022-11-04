@@ -57,15 +57,29 @@ class Antibodies(nanome.AsyncPluginInstance):
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
         await self.highlight_cdr_loops(comp)
+        self.set_plugin_list_button(run_btn, 'Building menu...', True)
+        self.build_menu(comp)
+        self.menu.enabled = True
+        self.update_menu(self.menu)
         self.set_plugin_list_button(run_btn, 'Run', True)
         Logs.debug("Done")
+
+    def build_menu(self, comp: structure.Complex):
+        self.menu.root.children = []
+        for chain in comp.chains:
+            seq_str = self.get_sequence_from_struct(chain)
+            try:
+                abchain = AbChain(seq_str, scheme='imgt')
+            except ChainParseError as e:
+                Logs.debug(f"Could not parse Chain {chain.name}")
+                continue
+            self.add_menu_chain_column(self.menu, chain, abchain)
 
     async def highlight_cdr_loops(self, comp):
         if not self.validate_antibody(comp):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
 
-        self.menu.root.children = []
         # Make entire complex Grey.
         Logs.debug("Making Complex Grey")
         self.set_plugin_list_button(run_btn, 'Coloring...', False)
@@ -87,7 +101,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
             except ChainParseError as e:
-                Logs.warning(f"Could not parse Chain {chain.name}")
+                Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
 
             cdr3_seq = abchain.cdr3_seq
@@ -107,8 +121,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
 
-            # Update menu
-            self.add_menu_chain_column(self.menu, chain, abchain)
 
             fr1_color = IMGTCDRColorScheme.FR.value
             fr2_color = IMGTCDRColorScheme.FR.value
@@ -152,8 +164,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                 i += 1
 
         self.update_structures_deep(comp.chains)
-        self.menu.enabled = True
-        self.update_menu(self.menu)
         self.set_plugin_list_button(run_btn, 'Done', False)
         return comp
 
