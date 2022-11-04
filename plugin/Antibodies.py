@@ -4,7 +4,6 @@ import tempfile
 import nanome
 from nanome.util import async_callback, Color, Logs, enums
 from nanome.api import ui, structure
-
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
@@ -36,6 +35,14 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.menu = ui.Menu()
         self.menu.root.layout_orientation = enums.LayoutTypes.horizontal
         self.menu.title = "Antibody Regions"
+        self.integration.structure_prep = self.integration_request
+
+    @async_callback
+    async def integration_request(self, request):
+        complexes = request.get_args()
+        comp = complexes[0]
+        modified_comp = await self.highlight_cdr_loops(comp)
+        request.send_response([modified_comp])
 
     @async_callback
     async def on_run(self):
@@ -58,6 +65,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
 
+        self.menu.root.children = []
         # Make entire complex Grey.
         Logs.debug("Making Complex Grey")
         self.set_plugin_list_button(run_btn, 'Coloring...', False)
@@ -147,6 +155,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.menu.enabled = True
         self.update_menu(self.menu)
         self.set_plugin_list_button(run_btn, 'Done', False)
+        return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)
@@ -288,8 +297,11 @@ class Antibodies(nanome.AsyncPluginInstance):
 
 
 def main():
+    name = 'Antibodies'
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
-    plugin = nanome.Plugin('Antibodies', description, 'other', False)
+    plugin = nanome.Plugin(
+        name, description, 'other', False,
+        integrations=[enums.Integrations.structure_prep])
     plugin.set_plugin_class(Antibodies)
     plugin.run()
 
