@@ -61,7 +61,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.build_menu(comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
-        self.set_plugin_list_button(run_btn, 'Run', True)
         Logs.debug("Done")
 
     def build_menu(self, comp: structure.Complex):
@@ -164,7 +163,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 i += 1
 
         self.update_structures_deep(comp.chains)
-        self.set_plugin_list_button(run_btn, 'Done', False)
+        # Reset run button
+        self.set_plugin_list_button(run_btn, 'Run', True)
         return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
