@@ -53,7 +53,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         shallow_comp = next((cmp for cmp in comp_list if cmp.get_selected()), None)
         if not shallow_comp:
             self.send_notification(enums.NotificationTypes.error, "Please select an antibody")
-            self.set_plugin_list_button(run_btn, 'Run', True)
+            self._reset_run_btn()
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
         await self.highlight_cdr_loops(comp)
@@ -61,6 +61,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.build_menu(comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
+        self._reset_run_btn()
         Logs.debug("Done")
 
     def build_menu(self, comp: structure.Complex):
@@ -163,8 +164,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 i += 1
 
         self.update_structures_deep(comp.chains)
-        # Reset run button
-        self.set_plugin_list_button(run_btn, 'Run', True)
+        self._reset_run_btn()
         return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
@@ -304,6 +304,9 @@ class Antibodies(nanome.AsyncPluginInstance):
         except KeyError:
             chain_seq = ''
         return chain_seq
+    
+    def _reset_run_btn(self):
+        self.set_plugin_list_button(run_btn, 'Run', True)
 
 
 def main():
