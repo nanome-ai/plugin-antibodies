@@ -149,7 +149,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 # Add label to middle residue
                 # The last 4 values are Fr1, Fr2, Fr3, Fr4
                 # This could be cleaned up a bit
-                if i < len(list(residue_lists)) - 4:
+                is_cdr = i < len(list(residue_lists)) - 4
+                if is_cdr:
                     label_val = f"CDR{chain_type}{i + 1}"
                 else:
                     number = i - 2
@@ -159,6 +160,9 @@ class Antibodies(nanome.AsyncPluginInstance):
                 for res in residue_list:
                     res.ribbon_color = res_color
                     for atom in res.atoms:
+                        if is_cdr:
+                            atom.set_visible(True)
+                            atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
                         atom.atom_color = res_color
                 i += 1
 
