@@ -121,7 +121,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
 
-
             fr1_color = IMGTCDRColorScheme.FR.value
             fr2_color = IMGTCDRColorScheme.FR.value
             fr3_color = IMGTCDRColorScheme.FR.value
