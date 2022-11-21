@@ -95,7 +95,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-            
+
             # # Make entire complex Grey.
             Logs.debug("Making Complex Grey")
             # self.set_plugin_list_button(run_btn, 'Coloring...', False)
@@ -103,7 +103,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 residue.ribbon_color = Color.Grey()
                 for atom in residue.atoms:
                     atom.atom_color = Color.Grey()
-            
+
             cdr3_seq = abchain.cdr3_seq
             if not cdr3_seq:
                 Logs.debug(f"No CDR3 in chain {chain.name}")
@@ -303,7 +303,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         except KeyError:
             chain_seq = ''
         return chain_seq
-    
+
     def _reset_run_btn(self):
         self.set_plugin_list_button(run_btn, 'Run', True)
 
