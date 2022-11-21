@@ -80,14 +80,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
 
-        # Make entire complex Grey.
-        Logs.debug("Making Complex Grey")
-        self.set_plugin_list_button(run_btn, 'Coloring...', False)
-        for residue in comp.residues:
-            residue.ribbon_color = Color.Grey()
-            for atom in residue.atoms:
-                atom.atom_color = Color.Grey()
-
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
@@ -103,6 +95,14 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
+
+            # # Make entire complex Grey.
+            Logs.debug("Making Complex Grey")
+            # self.set_plugin_list_button(run_btn, 'Coloring...', False)
+            for residue in chain.residues:
+                residue.ribbon_color = Color.Grey()
+                for atom in residue.atoms:
+                    atom.atom_color = Color.Grey()
 
             cdr3_seq = abchain.cdr3_seq
             if not cdr3_seq:
@@ -120,7 +120,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.warning(f"Could find cdr loops for Chain {chain.name}")
                 continue
-
 
             fr1_color = IMGTCDRColorScheme.FR.value
             fr2_color = IMGTCDRColorScheme.FR.value
@@ -304,7 +303,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         except KeyError:
             chain_seq = ''
         return chain_seq
-    
+
     def _reset_run_btn(self):
         self.set_plugin_list_button(run_btn, 'Run', True)
 
