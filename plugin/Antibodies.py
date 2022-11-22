@@ -49,8 +49,10 @@ class Antibodies(nanome.AsyncPluginInstance):
             Logs.warning("Antibody not formatted correctly")
             modified_comp = comp
         end_time = time.time()
-        elapsed_time = end_time - start_time
-        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)}")
+        # Log data about run
+        elapsed_time = round(end_time - start_time, 2)
+        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
+        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)}", extra=log_extra)
         request.send_response([modified_comp])
 
     @async_callback
