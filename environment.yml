@@ -7,3 +7,4 @@ dependencies:
   - pip:
       - nanome==0.38.7
       - biopython
+      - scipy==1.7.3
