@@ -42,7 +42,11 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = await self.highlight_cdr_loops(comp)
+        try:
+            modified_comp = await self.highlight_cdr_loops(comp)
+        except:
+            Logs.error("Error while highlighting CDR loops")
+            modified_comp = comp
         request.send_response([modified_comp])
 
     @async_callback
