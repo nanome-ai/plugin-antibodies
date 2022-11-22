@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import itertools
 import tempfile
@@ -88,6 +89,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
+        tasks = []
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = self.get_sequence_from_struct(chain)
@@ -99,90 +101,93 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-
-            # # Make entire complex Grey.
-            Logs.debug("Making Complex Grey")
-            # self.set_plugin_list_button(run_btn, 'Coloring...', False)
-            for residue in chain.residues:
-                residue.ribbon_color = Color.Grey()
-                for atom in residue.atoms:
-                    atom.atom_color = Color.Grey()
-
-            cdr3_seq = abchain.cdr3_seq
-            if not cdr3_seq:
-                Logs.debug(f"No CDR3 in chain {chain.name}")
-                continue
-
-            try:
-                cdr1_residues = self.get_cdr1_residues(chain)
-                cdr2_residues = self.get_cdr2_residues(chain)
-                cdr3_residues = self.get_cdr3_residues(chain)
-                fr1_residues = self.get_fr1_residues(chain)
-                fr2_residues = self.get_fr2_residues(chain)
-                fr3_residues = self.get_fr3_residues(chain)
-                fr4_residues = self.get_fr4_residues(chain)
-            except ChainParseError as e:
-                Logs.warning(f"Could find cdr loops for Chain {chain.name}")
-                continue
-
-            fr1_color = IMGTCDRColorScheme.FR.value
-            fr2_color = IMGTCDRColorScheme.FR.value
-            fr3_color = IMGTCDRColorScheme.FR.value
-            fr4_color = IMGTCDRColorScheme.FR.value
-
-            chain_type = abchain.chain_type
-            if chain_type == 'H':
-                cdr1_color = IMGTCDRColorScheme.HEAVY_CDR1.value
-                cdr2_color = IMGTCDRColorScheme.HEAVY_CDR2.value
-                cdr3_color = IMGTCDRColorScheme.HEAVY_CDR3.value
-            else:
-                cdr1_color = IMGTCDRColorScheme.LIGHT_CDR1.value
-                cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
-                cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
-
-            cdr_residue_lists = [cdr1_residues, cdr2_residues, cdr3_residues]
-            fr_residue_lists = [fr1_residues, fr2_residues, fr3_residues, fr4_residues]
-            cdr_colors = [cdr1_color, cdr2_color, cdr3_color]
-            fr_colors = [fr1_color, fr2_color, fr3_color, fr4_color]
-
-            residue_lists = cdr_residue_lists + fr_residue_lists
-            chain_colors = cdr_colors + fr_colors
-
-            i = 0
-            for residue_list, res_color in zip(residue_lists, chain_colors):
-                # Add label to middle residue
-                # The last 4 values are Fr1, Fr2, Fr3, Fr4
-                # This could be cleaned up a bit
-                is_cdr = i < len(list(residue_lists)) - 4
-                if is_cdr:
-                    label_val = f"CDR{chain_type}{i + 1}"
-                else:
-                    number = i - 2
-                    label_val = f"FR{chain_type}{number}"
-                self.label_residue_set(residue_list, label_val)
-                # Set residue and atom colors
-                for res in residue_list:
-                    res.ribbon_color = res_color
-                    for atom in res.atoms:
-                        if is_cdr:
-                            atom.set_visible(True)
-                            atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
-                        atom.atom_color = res_color
-                i += 1
-
-            # Make sure all atoms near cdr loop are in wire mode
-            # This makes viewing interactions easier.
-            cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
-            cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
-            neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
-            # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
-            for atom in neighbor_atoms:
-                atom.set_visible(True)
-                atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
-
+            tasks.append(self.format_chain(chain, abchain))
+        await asyncio.wait(tasks)
+        # await all_tasks
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(all_tasks)
+        Logs.debug("Updating Structures.")
         self.update_structures_deep(comp.chains)
         self._reset_run_btn()
         return comp
+    
+    async def format_chain(self, chain, abchain):
+        # Make entire complex Grey.
+        Logs.debug("Making Complex Grey")
+        # self.set_plugin_list_button(run_btn, 'Coloring...', False)
+        for residue in chain.residues:
+            residue.ribbon_color = Color.Grey()
+            for atom in residue.atoms:
+                atom.atom_color = Color.Grey()
+
+        try:
+            cdr1_residues = self.get_cdr1_residues(chain)
+            cdr2_residues = self.get_cdr2_residues(chain)
+            cdr3_residues = self.get_cdr3_residues(chain)
+            fr1_residues = self.get_fr1_residues(chain)
+            fr2_residues = self.get_fr2_residues(chain)
+            fr3_residues = self.get_fr3_residues(chain)
+            fr4_residues = self.get_fr4_residues(chain)
+        except ChainParseError as e:
+            Logs.warning(f"Could find cdr loops for Chain {chain.name}")
+
+        fr1_color = IMGTCDRColorScheme.FR.value
+        fr2_color = IMGTCDRColorScheme.FR.value
+        fr3_color = IMGTCDRColorScheme.FR.value
+        fr4_color = IMGTCDRColorScheme.FR.value
+
+        chain_type = abchain.chain_type
+        if chain_type == 'H':
+            cdr1_color = IMGTCDRColorScheme.HEAVY_CDR1.value
+            cdr2_color = IMGTCDRColorScheme.HEAVY_CDR2.value
+            cdr3_color = IMGTCDRColorScheme.HEAVY_CDR3.value
+        else:
+            cdr1_color = IMGTCDRColorScheme.LIGHT_CDR1.value
+            cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
+            cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
+
+        cdr_residue_lists = [cdr1_residues, cdr2_residues, cdr3_residues]
+        fr_residue_lists = [fr1_residues, fr2_residues, fr3_residues, fr4_residues]
+        cdr_colors = [cdr1_color, cdr2_color, cdr3_color]
+        fr_colors = [fr1_color, fr2_color, fr3_color, fr4_color]
+
+        residue_lists = cdr_residue_lists + fr_residue_lists
+        chain_colors = cdr_colors + fr_colors
+
+        i = 0
+        Logs.debug("Coloring cdr loops and framework")
+        for residue_list, res_color in zip(residue_lists, chain_colors):
+            # Add label to middle residue
+            # The last 4 values are Fr1, Fr2, Fr3, Fr4
+            # This could be cleaned up a bit
+            is_cdr = i < len(list(residue_lists)) - 4
+            if is_cdr:
+                label_val = f"CDR{chain_type}{i + 1}"
+            else:
+                number = i - 2
+                label_val = f"FR{chain_type}{number}"
+            self.label_residue_set(residue_list, label_val)
+            # Set residue and atom colors
+            for res in residue_list:
+                res.ribbon_color = res_color
+                for atom in res.atoms:
+                    if is_cdr:
+                        atom.set_visible(True)
+                        atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
+                    atom.atom_color = res_color
+            i += 1
+
+        # Make sure all atoms near cdr loop are in wire mode
+        # This makes viewing interactions easier.
+        Logs.debug("Making CDR atoms wire")
+        comp = chain.complex
+        cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
+        cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
+        neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
+        # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
+        for atom in neighbor_atoms:
+            atom.set_visible(True)
+            atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)
