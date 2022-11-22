@@ -9,6 +9,7 @@ from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
 
 from enum import Enum
+from .utils import get_neighboring_atoms
 
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
@@ -41,7 +42,11 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = await self.highlight_cdr_loops(comp)
+        try:
+            modified_comp = await self.highlight_cdr_loops(comp)
+        except:
+            Logs.error("Error while highlighting CDR loops")
+            modified_comp = comp
         request.send_response([modified_comp])
 
     @async_callback
@@ -149,7 +154,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 # Add label to middle residue
                 # The last 4 values are Fr1, Fr2, Fr3, Fr4
                 # This could be cleaned up a bit
-                if i < len(list(residue_lists)) - 4:
+                is_cdr = i < len(list(residue_lists)) - 4
+                if is_cdr:
                     label_val = f"CDR{chain_type}{i + 1}"
                 else:
                     number = i - 2
@@ -159,8 +165,21 @@ class Antibodies(nanome.AsyncPluginInstance):
                 for res in residue_list:
                     res.ribbon_color = res_color
                     for atom in res.atoms:
+                        if is_cdr:
+                            atom.set_visible(True)
+                            atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
                         atom.atom_color = res_color
                 i += 1
+
+            # Make sure all atoms near cdr loop are in wire mode
+            # This makes viewing interactions easier.
+            cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
+            cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
+            neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
+            # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
+            for atom in neighbor_atoms:
+                atom.set_visible(True)
+                atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
 
         self.update_structures_deep(comp.chains)
         self._reset_run_btn()
