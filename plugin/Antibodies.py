@@ -1,7 +1,7 @@
-import asyncio
 import functools
 import itertools
 import tempfile
+import time
 import nanome
 from nanome.util import async_callback, Color, Logs, enums
 from nanome.api import ui, structure
@@ -41,12 +41,16 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @async_callback
     async def integration_request(self, request):
+        start_time = time.time()
         complexes = request.get_args()
         comp = complexes[0]
         modified_comp = await self.highlight_cdr_loops(comp)
         if not modified_comp:
             Logs.warning("Antibody not formatted correctly")
             modified_comp = comp
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)}")
         request.send_response([modified_comp])
 
     @async_callback
@@ -103,12 +107,13 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-            tasks.append(self.format_chain(chain, abchain))
-        await asyncio.gather(*tasks)
+            self.format_chain(chain, abchain)
         self._reset_run_btn()
+        Logs.debug("Done")
         return comp
 
-    async def format_chain(self, chain, abchain):
+    def format_chain(self, chain, abchain):
+        """Color CDR loops and add labels."""
         # Make entire complex Grey.
         Logs.debug("Making Chain Grey")
         # self.set_plugin_list_button(run_btn, 'Coloring...', False)
@@ -116,7 +121,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.atom_color = Color.Grey()
-
         try:
             cdr1_residues = self.get_cdr1_residues(chain)
             cdr2_residues = self.get_cdr2_residues(chain)
