@@ -104,13 +104,10 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
             tasks.append(self.format_chain(chain, abchain))
-        await asyncio.wait(tasks)
-        # await all_tasks
-        # loop = asyncio.get_event_loop()
-        # loop.run_until_complete(all_tasks)
+        await asyncio.gather(*tasks)
         self._reset_run_btn()
         return comp
-    
+
     async def format_chain(self, chain, abchain):
         # Make entire complex Grey.
         Logs.debug("Making Chain Grey")
@@ -187,7 +184,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
         for atom in neighbor_atoms:
             atom.set_visible(True)
-            atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
+            atom.atom_mode = atom.AtomRenderingMode.Wire
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)
