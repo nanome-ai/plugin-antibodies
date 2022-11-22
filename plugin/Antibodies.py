@@ -62,6 +62,8 @@ class Antibodies(nanome.AsyncPluginInstance):
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
         await self.highlight_cdr_loops(comp)
+        Logs.debug("Updating Structures.")
+        self.update_structures_deep(comp.chains)
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
         self.build_menu(comp)
         self.menu.enabled = True
@@ -106,14 +108,12 @@ class Antibodies(nanome.AsyncPluginInstance):
         # await all_tasks
         # loop = asyncio.get_event_loop()
         # loop.run_until_complete(all_tasks)
-        Logs.debug("Updating Structures.")
-        self.update_structures_deep(comp.chains)
         self._reset_run_btn()
         return comp
     
     async def format_chain(self, chain, abchain):
         # Make entire complex Grey.
-        Logs.debug("Making Complex Grey")
+        Logs.debug("Making Chain Grey")
         # self.set_plugin_list_button(run_btn, 'Coloring...', False)
         for residue in chain.residues:
             residue.ribbon_color = Color.Grey()
@@ -173,7 +173,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 for atom in res.atoms:
                     if is_cdr:
                         atom.set_visible(True)
-                        atom.rendering.atom_mode = atom.AtomRenderingMode.Wire
+                        atom.atom_mode = atom.AtomRenderingMode.Wire
                     atom.atom_color = res_color
             i += 1
 
