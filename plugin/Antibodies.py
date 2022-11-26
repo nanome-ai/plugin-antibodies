@@ -67,6 +67,10 @@ class Antibodies(nanome.AsyncPluginInstance):
             self._reset_run_btn()
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
+        if not self.validate_antibody(comp):
+            self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
+            return
+        self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
         await self.highlight_cdr_loops(comp)
         Logs.debug("Updating Structures.")
         self.update_structures_deep(comp.chains)
@@ -90,14 +94,9 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @classmethod
     async def highlight_cdr_loops(cls, comp):
-        # if not self.validate_antibody(comp):
-        #     self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
-        #     return
-
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
-        # self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = cls.get_sequence_from_struct(chain)
@@ -110,7 +109,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
             cls.format_chain(chain, abchain)
-        # self._reset_run_btn()
         Logs.debug("Done")
         return comp
 
@@ -119,7 +117,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         """Color CDR loops and add labels."""
         # Make entire complex Grey.
         Logs.debug("Making Chain Grey")
-        # self.set_plugin_list_button(run_btn, 'Coloring...', False)
         for residue in chain.residues:
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
@@ -161,7 +158,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         i = 0
         Logs.debug("Coloring cdr loops and framework")
         for residue_list, res_color in zip(residue_lists, chain_colors):
-            # Add label to middle residue
             # The last 4 values are Fr1, Fr2, Fr3, Fr4
             # This could be cleaned up a bit
             is_cdr = i < len(list(residue_lists)) - 4
@@ -170,6 +166,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             else:
                 number = i - 2
                 label_val = f"FR{chain_type}{number}"
+            # Add label to middle residue
             cls.label_residue_set(residue_list, label_val)
             # Set residue and atom colors
             for res in residue_list:
