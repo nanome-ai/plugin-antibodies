@@ -16,6 +16,23 @@ protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
 
 
+def get_sequence_from_pdb(pdb_filepath):
+    with open(pdb_filepath) as handle:
+        sequence = next(SeqIO.parse(handle, "pdb-atom"))
+    seq = str(sequence.seq)
+    return seq
+
+def get_sequence_from_struct(struct):
+    try:
+        chain_seq = ''.join([
+            protein_letters_3to1[res.name.title()]
+            for res in struct.residues
+        ])
+    except KeyError:
+        chain_seq = ''
+    return chain_seq
+
+
 class IMGTCDRColorScheme(Enum):
     """
     Source: https://www.imgt.org/IMGTScientificChart/RepresentationRules/colormenu.php#h1_26
@@ -80,7 +97,7 @@ class Antibodies(nanome.AsyncPluginInstance):
     def build_menu(self, comp: structure.Complex):
         self.menu.root.children = []
         for chain in comp.chains:
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = get_sequence_from_struct(chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
             except ChainParseError as e:
@@ -100,7 +117,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         tasks = []
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = get_sequence_from_struct(chain)
             if not seq_str:
                 Logs.warning(f"Unable to sequence chain {chain.name}")
                 continue
@@ -240,7 +257,7 @@ class Antibodies(nanome.AsyncPluginInstance):
     def validate_antibody(self, comp):
         # Make sure at least one chain can be parsed with ABChain
         for chain in comp.chains:
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = get_sequence_from_struct(chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
                 if abchain:
@@ -292,7 +309,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         if cdr not in ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']:
             raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are 'cdr1', 'cdr2', and 'cdr3'")
         if not abchain:
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = get_sequence_from_struct(chain)
             abchain = AbChain(seq_str, scheme='imgt')
 
         seq_attr_name = f'{cdr}_seq'
@@ -313,22 +330,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                     cdr_residues = residue_sublist
                     break
         return cdr_residues
-
-    def get_sequence_from_pdb(self, pdb_filepath):
-        with open(pdb_filepath) as handle:
-            sequence = next(SeqIO.parse(handle, "pdb-atom"))
-        seq = str(sequence.seq)
-        return seq
-
-    def get_sequence_from_struct(self, struct):
-        try:
-            chain_seq = ''.join([
-                protein_letters_3to1[res.name.title()]
-                for res in struct.residues
-            ])
-        except KeyError:
-            chain_seq = ''
-        return chain_seq
 
     def _reset_run_btn(self):
         self.set_plugin_list_button(run_btn, 'Run', True)
