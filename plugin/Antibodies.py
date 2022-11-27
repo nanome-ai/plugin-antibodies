@@ -3,11 +3,12 @@ import itertools
 import tempfile
 import time
 import nanome
-from nanome.util import async_callback, Color, Logs, enums
-from nanome.api import ui, structure
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
+from concurrent.futures import ThreadPoolExecutor
+from nanome.api import ui, structure
+from nanome.util import async_callback, Color, Logs, enums
 
 from enum import Enum
 from .utils import get_neighboring_atoms
@@ -41,18 +42,12 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @async_callback
     async def integration_request(self, request):
-        start_time = time.time()
         complexes = request.get_args()
         comp = complexes[0]
         modified_comp = await self.highlight_cdr_loops(comp)
         if not modified_comp:
             Logs.warning("Antibody not formatted correctly")
             modified_comp = comp
-        end_time = time.time()
-        # Log data about run
-        elapsed_time = round(end_time - start_time, 2)
-        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
-        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)}", extra=log_extra)
         request.send_response([modified_comp])
 
     @async_callback
@@ -94,9 +89,11 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @classmethod
     async def highlight_cdr_loops(cls, comp):
+        start_time = time.time()
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
+        chains_to_color = []
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = cls.get_sequence_from_struct(chain)
@@ -108,8 +105,18 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-            cls.format_chain(chain, abchain)
+            else:
+                chains_to_color.append((chain, abchain))
+
+        with ThreadPoolExecutor(max_workers=len(chains_to_color)) as executor:
+            for ch, abch in chains_to_color:
+                executor.submit(cls.format_chain, ch, abch)
         Logs.debug("Done")
+        # Log data about run
+        end_time = time.time()
+        elapsed_time = round(end_time - start_time, 2)
+        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
+        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)} seconds", extra=log_extra)
         return comp
 
     @classmethod
