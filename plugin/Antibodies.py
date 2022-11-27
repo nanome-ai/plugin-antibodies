@@ -44,7 +44,7 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = await self.highlight_cdr_loops(comp)
+        modified_comp = await self.color_complex_chains(comp)
         if not modified_comp:
             Logs.warning("Antibody not formatted correctly")
             modified_comp = comp
@@ -66,7 +66,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
-        await self.highlight_cdr_loops(comp)
+        await self.color_complex_chains(comp)
         Logs.debug("Updating Structures.")
         self.update_structures_deep(comp.chains)
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
@@ -88,7 +88,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.add_menu_chain_column(self.menu, chain, abchain)
 
     @classmethod
-    async def highlight_cdr_loops(cls, comp):
+    def color_complex_chains(cls, comp):
         start_time = time.time()
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
@@ -128,6 +128,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.atom_color = Color.Grey()
+                atom.set_visible(True)
         try:
             cdr1_residues = cls.get_cdr1_residues(chain)
             cdr2_residues = cls.get_cdr2_residues(chain)
@@ -192,7 +193,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
         cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
-        # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
         for atom in neighbor_atoms:
             atom.set_visible(True)
             atom.atom_mode = atom.AtomRenderingMode.Wire
