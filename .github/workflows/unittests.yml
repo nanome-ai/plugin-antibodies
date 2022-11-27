@@ -7,9 +7,9 @@ on:
 
 jobs:
   unittests:
-    if: ${{ false }} # disable for now, until tests are added.
+    # if: ${{ false }} # disable for now, until tests are added.
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - run: cd docker && ./build.sh
-    - run: docker run --rm antibodies:latest python run_tests.py
+    - run: docker run --rm antibodies:latest python -m unittest discover tests
