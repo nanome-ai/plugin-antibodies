@@ -4,3 +4,4 @@
 !plugin
 !environment.yml
 !run.py
+!tests
