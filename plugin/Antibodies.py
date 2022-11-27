@@ -44,8 +44,8 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = self.prep_antibody_complex(comp)
-        request.send_response([modified_comp])
+        self.prep_antibody_complex(comp)
+        request.send_response([comp])
 
     @async_callback
     async def on_run(self):
@@ -63,11 +63,11 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
-        modified_comp = self.prep_antibody_complex(comp)
+        self.prep_antibody_complex(comp)
         Logs.debug("Updating Structures.")
-        self.update_structures_deep(modified_comp.chains)
+        self.update_structures_deep(comp.chains)
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
-        self.build_menu(modified_comp)
+        self.build_menu(comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
@@ -113,7 +113,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         end_time = time.time()
         elapsed_time = round(end_time - start_time, 2)
         log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
-        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)} seconds", extra=log_extra)
+        Logs.message(f"Complex prepped in {elapsed_time} seconds", extra=log_extra)
         return comp
 
     @classmethod
