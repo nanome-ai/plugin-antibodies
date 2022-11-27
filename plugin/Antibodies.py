@@ -44,10 +44,7 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = await self.color_complex_chains(comp)
-        if not modified_comp:
-            Logs.warning("Antibody not formatted correctly")
-            modified_comp = comp
+        modified_comp = self.prep_antibody_complex(comp)
         request.send_response([modified_comp])
 
     @async_callback
@@ -66,11 +63,11 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
             return
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
-        await self.color_complex_chains(comp)
+        modified_comp = self.prep_antibody_complex(comp)
         Logs.debug("Updating Structures.")
-        self.update_structures_deep(comp.chains)
+        self.update_structures_deep(modified_comp.chains)
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
-        self.build_menu(comp)
+        self.build_menu(modified_comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
@@ -88,7 +85,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.add_menu_chain_column(self.menu, chain, abchain)
 
     @classmethod
-    def color_complex_chains(cls, comp):
+    def prep_antibody_complex(cls, comp):
         start_time = time.time()
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
@@ -128,7 +125,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.atom_color = Color.Grey()
-                atom.set_visible(True)
         try:
             cdr1_residues = cls.get_cdr1_residues(chain)
             cdr2_residues = cls.get_cdr2_residues(chain)
@@ -188,7 +184,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
-        Logs.debug("Making CDR atoms wire")
+        Logs.debug("Making neighboring atoms wires")
         comp = chain.complex
         cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
         cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
@@ -196,6 +192,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         for atom in neighbor_atoms:
             atom.set_visible(True)
             atom.atom_mode = atom.AtomRenderingMode.Wire
+        return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)

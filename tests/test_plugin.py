@@ -5,7 +5,7 @@ from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from nanome.api import structure, PluginInstance
 from plugin.Antibodies import Antibodies, IMGTCDRColorScheme
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 fixtures_dir = os.path.join(os.path.dirname(__file__), 'fixtures')
 
 
@@ -26,10 +26,9 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         self.pdb_file = os.path.join(fixtures_dir, '3chn.pdb')
         self.complex = structure.Complex.io.from_pdb(path=self.pdb_file)
 
-    def test_color_complex_chains(self):
+    def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
-        comp = self.complex
-        Antibodies.color_complex_chains(comp)
+        comp = Antibodies.prep_antibody_complex(self.complex)
         # Get abchain to validate colors for each region.
         for chain in comp.chains:
             seq_str = Antibodies.get_sequence_from_struct(chain)
@@ -49,6 +48,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             
             # Assert each cdr region is colored properly.
             if abchain.chain_type == 'H':
+                # Validate heavy chain CDRs
                 self.assertEqual(
                     set(res.ribbon_color for res in cdr1_residues),
                     set([IMGTCDRColorScheme.HEAVY_CDR1.value]))
@@ -59,6 +59,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
                     set(res.ribbon_color for res in cdr3_residues),
                     set([IMGTCDRColorScheme.HEAVY_CDR3.value]))
             else:
+                # Validate light chain CDRs
                 self.assertEqual(
                     set(res.ribbon_color for res in cdr1_residues),
                     set([IMGTCDRColorScheme.LIGHT_CDR1.value]))
