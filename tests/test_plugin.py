@@ -45,7 +45,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             fr2_residues = Antibodies.get_fr2_residues(chain, abchain)
             fr3_residues = Antibodies.get_fr3_residues(chain, abchain)
             fr4_residues = Antibodies.get_fr4_residues(chain, abchain)
-            
+
             # Assert each cdr region is colored properly.
             if abchain.chain_type == 'H':
                 # Validate heavy chain CDRs
