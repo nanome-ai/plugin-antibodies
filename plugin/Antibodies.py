@@ -198,7 +198,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
         Logs.debug("Making neighboring atoms wires")
-        # cdr_residues = itertools.chain.from_iterable(residue_list)
         cdr_atoms = itertools.chain(*[res.atoms for res in residue_list])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
         for atom in neighbor_atoms:
