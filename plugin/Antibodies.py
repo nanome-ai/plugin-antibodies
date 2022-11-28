@@ -3,11 +3,12 @@ import itertools
 import tempfile
 import time
 import nanome
-from nanome.util import async_callback, Color, Logs, enums
-from nanome.api import ui, structure
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from Bio import SeqIO, SeqUtils
+from concurrent.futures import ThreadPoolExecutor
+from nanome.api import ui, structure
+from nanome.util import async_callback, Color, Logs, enums
 
 from enum import Enum
 from .utils import get_neighboring_atoms
@@ -41,18 +42,9 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @async_callback
     async def integration_request(self, request):
-        start_time = time.time()
         complexes = request.get_args()
         comp = complexes[0]
-        modified_comp = await self.highlight_cdr_loops(comp)
-        if not modified_comp:
-            Logs.warning("Antibody not formatted correctly")
-            modified_comp = comp
-        end_time = time.time()
-        # Log data about run
-        elapsed_time = round(end_time - start_time, 2)
-        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
-        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)}", extra=log_extra)
+        modified_comp = self.prep_antibody_complex(comp)
         request.send_response([modified_comp])
 
     @async_callback
@@ -67,11 +59,15 @@ class Antibodies(nanome.AsyncPluginInstance):
             self._reset_run_btn()
             return
         comp = (await self.request_complexes([shallow_comp.index]))[0]
-        await self.highlight_cdr_loops(comp)
+        if not self.validate_antibody(comp):
+            self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
+            return
+        self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
+        modified_comp = self.prep_antibody_complex(comp)
         Logs.debug("Updating Structures.")
-        self.update_structures_deep(comp.chains)
+        self.update_structures_deep(modified_comp.chains)
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
-        self.build_menu(comp)
+        self.build_menu(modified_comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
@@ -88,19 +84,16 @@ class Antibodies(nanome.AsyncPluginInstance):
                 continue
             self.add_menu_chain_column(self.menu, chain, abchain)
 
-    async def highlight_cdr_loops(self, comp):
-        if not self.validate_antibody(comp):
-            self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
-            return
-
+    @classmethod
+    def prep_antibody_complex(cls, comp):
+        start_time = time.time()
         comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
-        self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
-        tasks = []
+        chains_to_color = []
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = cls.get_sequence_from_struct(chain)
             if not seq_str:
                 Logs.warning(f"Unable to sequence chain {chain.name}")
                 continue
@@ -109,28 +102,37 @@ class Antibodies(nanome.AsyncPluginInstance):
             except ChainParseError as e:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-            self.format_chain(chain, abchain)
-        self._reset_run_btn()
+            else:
+                chains_to_color.append((chain, abchain))
+
+        with ThreadPoolExecutor(max_workers=len(chains_to_color)) as executor:
+            for ch, abch in chains_to_color:
+                executor.submit(cls.format_chain, ch, abch)
         Logs.debug("Done")
+        # Log data about run
+        end_time = time.time()
+        elapsed_time = round(end_time - start_time, 2)
+        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
+        Logs.message(f"Antibody formatted in {round(elapsed_time, 2)} seconds", extra=log_extra)
         return comp
 
-    def format_chain(self, chain, abchain):
+    @classmethod
+    def format_chain(cls, chain, abchain):
         """Color CDR loops and add labels."""
         # Make entire complex Grey.
         Logs.debug("Making Chain Grey")
-        # self.set_plugin_list_button(run_btn, 'Coloring...', False)
         for residue in chain.residues:
             residue.ribbon_color = Color.Grey()
             for atom in residue.atoms:
                 atom.atom_color = Color.Grey()
         try:
-            cdr1_residues = self.get_cdr1_residues(chain)
-            cdr2_residues = self.get_cdr2_residues(chain)
-            cdr3_residues = self.get_cdr3_residues(chain)
-            fr1_residues = self.get_fr1_residues(chain)
-            fr2_residues = self.get_fr2_residues(chain)
-            fr3_residues = self.get_fr3_residues(chain)
-            fr4_residues = self.get_fr4_residues(chain)
+            cdr1_residues = cls.get_cdr1_residues(chain)
+            cdr2_residues = cls.get_cdr2_residues(chain)
+            cdr3_residues = cls.get_cdr3_residues(chain)
+            fr1_residues = cls.get_fr1_residues(chain)
+            fr2_residues = cls.get_fr2_residues(chain)
+            fr3_residues = cls.get_fr3_residues(chain)
+            fr4_residues = cls.get_fr4_residues(chain)
         except ChainParseError as e:
             Logs.warning(f"Could find cdr loops for Chain {chain.name}")
 
@@ -160,7 +162,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         i = 0
         Logs.debug("Coloring cdr loops and framework")
         for residue_list, res_color in zip(residue_lists, chain_colors):
-            # Add label to middle residue
             # The last 4 values are Fr1, Fr2, Fr3, Fr4
             # This could be cleaned up a bit
             is_cdr = i < len(list(residue_lists)) - 4
@@ -169,7 +170,8 @@ class Antibodies(nanome.AsyncPluginInstance):
             else:
                 number = i - 2
                 label_val = f"FR{chain_type}{number}"
-            self.label_residue_set(residue_list, label_val)
+            # Add label to middle residue
+            cls.label_residue_set(residue_list, label_val)
             # Set residue and atom colors
             for res in residue_list:
                 res.ribbon_color = res_color
@@ -182,15 +184,15 @@ class Antibodies(nanome.AsyncPluginInstance):
 
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
-        Logs.debug("Making CDR atoms wire")
+        Logs.debug("Making neighboring atoms wires")
         comp = chain.complex
         cdr_residues = itertools.chain.from_iterable(cdr_residue_lists)
         cdr_atoms = itertools.chain(*[res.atoms for res in cdr_residues])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
-        # neighbor_residues = list(set([atom.residue for atom in neighbor_atoms]))
         for atom in neighbor_atoms:
             atom.set_visible(True)
             atom.atom_mode = atom.AtomRenderingMode.Wire
+        return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self.zoom_on_structures(residue_list)
@@ -231,7 +233,8 @@ class Antibodies(nanome.AsyncPluginInstance):
         cdr3_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
 
-    def label_residue_set(self, residue_list, label_text):
+    @staticmethod
+    def label_residue_set(residue_list, label_text):
         """Add label to middle residue in residue list."""
         middle_residue = residue_list[(len(residue_list) // 2)]
         middle_residue.labeled = True
@@ -249,42 +252,50 @@ class Antibodies(nanome.AsyncPluginInstance):
                 continue
             return False
 
-    def get_cdr1_residues(self, struc, abchain=None):
+    @classmethod
+    def get_cdr1_residues(cls, struc, abchain=None):
         cdr_name = 'cdr1'
-        residues = self._get_region_residues(struc, cdr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, cdr_name, abchain=abchain)
         return residues
 
-    def get_cdr2_residues(self, struc, abchain=None):
+    @classmethod
+    def get_cdr2_residues(cls, struc, abchain=None):
         cdr_name = 'cdr2'
-        residues = self._get_region_residues(struc, cdr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, cdr_name, abchain=abchain)
         return residues
 
-    def get_cdr3_residues(self, struc, abchain=None):
+    @classmethod
+    def get_cdr3_residues(cls, struc, abchain=None):
         cdr_name = 'cdr3'
-        residues = self._get_region_residues(struc, cdr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, cdr_name, abchain=abchain)
         return residues
 
-    def get_fr1_residues(self, struc, abchain=None):
+    @classmethod
+    def get_fr1_residues(cls, struc, abchain=None):
         fr_name = 'fr1'
-        residues = self._get_region_residues(struc, fr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
 
-    def get_fr2_residues(self, struc, abchain=None):
+    @classmethod
+    def get_fr2_residues(cls, struc, abchain=None):
         fr_name = 'fr2'
-        residues = self._get_region_residues(struc, fr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
 
-    def get_fr3_residues(self, struc, abchain=None):
+    @classmethod
+    def get_fr3_residues(cls, struc, abchain=None):
         fr_name = 'fr3'
-        residues = self._get_region_residues(struc, fr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
 
-    def get_fr4_residues(self, struc, abchain=None):
+    @classmethod
+    def get_fr4_residues(cls, struc, abchain=None):
         fr_name = 'fr4'
-        residues = self._get_region_residues(struc, fr_name, abchain=abchain)
+        residues = cls._get_region_residues(struc, fr_name, abchain=abchain)
         return residues
 
-    def _get_region_residues(self, chain, cdr: str, abchain=None):
+    @classmethod
+    def _get_region_residues(cls, chain, cdr: str, abchain=None):
         """Get nanome residues corresponding to provided cdr name.
 
         valid cdr names are 'cdr1', 'cdr2', and 'cdr3'
@@ -292,7 +303,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         if cdr not in ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']:
             raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are 'cdr1', 'cdr2', and 'cdr3'")
         if not abchain:
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = cls.get_sequence_from_struct(chain)
             abchain = AbChain(seq_str, scheme='imgt')
 
         seq_attr_name = f'{cdr}_seq'
@@ -314,13 +325,15 @@ class Antibodies(nanome.AsyncPluginInstance):
                     break
         return cdr_residues
 
-    def get_sequence_from_pdb(self, pdb_filepath):
+    @staticmethod
+    def get_sequence_from_pdb(pdb_filepath):
         with open(pdb_filepath) as handle:
             sequence = next(SeqIO.parse(handle, "pdb-atom"))
         seq = str(sequence.seq)
         return seq
 
-    def get_sequence_from_struct(self, struct):
+    @staticmethod
+    def get_sequence_from_struct(struct):
         try:
             chain_seq = ''.join([
                 protein_letters_3to1[res.name.title()]
