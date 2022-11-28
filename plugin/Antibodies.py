@@ -149,7 +149,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         fr1_res_indices = [res.index for res in fr1_residues]
         fr2_res_indices = [res.index for res in fr2_residues]
         fr3_res_indices = [res.index for res in fr3_residues]
-        fr4_res_indices = [res.index for res in fr3_residues]
+        fr4_res_indices = [res.index for res in fr4_residues]
 
         Logs.debug("Coloring cdr loops and framework")
         for residue in chain.residues:
@@ -173,7 +173,6 @@ class Antibodies(nanome.AsyncPluginInstance):
                 current_color = fr3_color
             elif res_index in fr4_res_indices:
                 current_color = fr4_color
-
             residue.ribbon_color = current_color
             for atom in residue.atoms:
                 atom.atom_color = current_color
