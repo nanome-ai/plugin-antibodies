@@ -65,13 +65,12 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
         self.prep_antibody_complex(comp)
         Logs.debug("Updating Structures.")
-        self.update_structures_deep([comp])
+        await self.update_structures_deep([comp])
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
         self.build_menu(comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
-        Logs.debug("Done")
 
     def build_menu(self, comp: structure.Complex):
         self.menu.root.children = []
