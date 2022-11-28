@@ -1,4 +1,5 @@
 import asyncio
+from random import randint
 import os
 import unittest
 from abnumber import Chain as AbChain
@@ -25,10 +26,12 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         PluginInstance._instance = self.plugin
         self.pdb_file = os.path.join(fixtures_dir, '3chn.pdb')
         self.complex = structure.Complex.io.from_pdb(path=self.pdb_file)
+        self._set_indices(self.complex)
 
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
-        comp = Antibodies.prep_antibody_complex(self.complex)
+        comp = self.complex
+        Antibodies.prep_antibody_complex(comp)
         # Get abchain to validate colors for each region.
         for chain in comp.chains:
             seq_str = Antibodies.get_sequence_from_struct(chain)
@@ -82,3 +85,18 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             self.assertEqual(
                 set(res.ribbon_color for res in fr4_residues),
                 set([IMGTCDRColorScheme.FR.value]))
+
+    def _set_indices(self, comp):
+        """Set random indices for residues and atoms.
+
+        Prevents issues with duplicate indices.
+        """
+        min_index = 100000
+        max_index = 999999
+        comp.index = randint(min_index, max_index)
+        for chain in comp.chains:
+            chain.index = randint(min_index, max_index)
+            for residue in chain.residues:
+                residue.index = randint(min_index, max_index)
+                for atom in residue.atoms:
+                    atom.index = randint(min_index, max_index)
