@@ -191,7 +191,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         cls.display_neighboring_atoms(comp, cdr1_residues)
         cls.display_neighboring_atoms(comp, cdr2_residues)
         cls.display_neighboring_atoms(comp, cdr3_residues)
-    
+
     @classmethod
     def display_neighboring_atoms(cls, comp, residue_list, distance=3.0):
         # Make sure all atoms near cdr loop are in wire mode
