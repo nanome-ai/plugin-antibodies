@@ -182,15 +182,17 @@ class Antibodies(nanome.AsyncPluginInstance):
         cls.display_neighboring_atoms(comp, cdr3_residues)
 
     @classmethod
-    def display_neighboring_atoms(cls, comp, residue_list, distance=3.0):
+    def display_neighboring_atoms(cls, comp, residue_list):
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
         Logs.debug("Making neighboring atoms wires")
         cdr_atoms = itertools.chain(*[res.atoms for res in residue_list])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
         for atom in neighbor_atoms:
-            atom.set_visible(True)
-            atom.atom_mode = atom.AtomRenderingMode.Wire
+            is_framework = atom.atom_color.rgb == IMGTCDRColorScheme.FR.value.rgb
+            if not is_framework:
+                atom.set_visible(True)
+                atom.atom_mode = atom.AtomRenderingMode.Wire
         return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
