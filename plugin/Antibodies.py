@@ -142,36 +142,37 @@ class Antibodies(nanome.AsyncPluginInstance):
             cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
             cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
 
-        cdr1_res_indices = [res.index for res in cdr1_residues]
-        cdr2_res_indices = [res.index for res in cdr2_residues]
-        cdr3_res_indices = [res.index for res in cdr3_residues]
-        fr1_res_indices = [res.index for res in fr1_residues]
-        fr2_res_indices = [res.index for res in fr2_residues]
-        fr3_res_indices = [res.index for res in fr3_residues]
-        fr4_res_indices = [res.index for res in fr4_residues]
+        cdr1_res_serials = [res.serial for res in cdr1_residues]
+        cdr2_res_serials = [res.serial for res in cdr2_residues]
+        cdr3_res_serials = [res.serial for res in cdr3_residues]
+        fr1_res_serials = [res.serial for res in fr1_residues]
+        fr2_res_serials = [res.serial for res in fr2_residues]
+        fr3_res_serials = [res.serial for res in fr3_residues]
+        fr4_res_serials = [res.serial for res in fr4_residues]
 
         Logs.debug("Coloring cdr loops and framework")
         for residue in chain.residues:
             current_color = Color.Grey()
             use_wire_rendering = False
-            res_index = residue.index
-            if res_index in cdr1_res_indices:
+            res_serial = residue.serial
+            if res_serial in cdr1_res_serials:
                 current_color = cdr1_color
                 use_wire_rendering = True
-            elif res_index in cdr2_res_indices:
+            elif res_serial in cdr2_res_serials:
                 current_color = cdr2_color
                 use_wire_rendering = True
-            elif res_index in cdr3_res_indices:
+            elif res_serial in cdr3_res_serials:
                 current_color = cdr3_color
                 use_wire_rendering = True
-            elif res_index in fr1_res_indices:
+            elif res_serial in fr1_res_serials:
                 current_color = fr1_color
-            elif res_index in fr2_res_indices:
+            elif res_serial in fr2_res_serials:
                 current_color = fr2_color
-            elif res_index in fr3_res_indices:
+            elif res_serial in fr3_res_serials:
                 current_color = fr3_color
-            elif res_index in fr4_res_indices:
+            elif res_serial in fr4_res_serials:
                 current_color = fr4_color
+
             residue.ribbon_color = current_color
             for atom in residue.atoms:
                 atom.atom_color = current_color
