@@ -65,7 +65,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
         self.prep_antibody_complex(comp)
         Logs.debug("Updating Structures.")
-        self.update_structures_deep(comp.chains)
+        self.update_structures_deep([comp])
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
         self.build_menu(comp)
         self.menu.enabled = True
@@ -113,7 +113,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         elapsed_time = round(end_time - start_time, 2)
         log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
         Logs.message(f"Complex prepped in {elapsed_time} seconds", extra=log_extra)
-        return comp
 
     @classmethod
     def format_chain(cls, chain, abchain):
@@ -312,10 +311,11 @@ class Antibodies(nanome.AsyncPluginInstance):
     def _get_region_residues(cls, chain, cdr: str, abchain=None):
         """Get nanome residues corresponding to provided cdr name.
 
-        valid cdr names are 'cdr1', 'cdr2', and 'cdr3'
+        valid cdr names are 'cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4'
         """
-        if cdr not in ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']:
-            raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are 'cdr1', 'cdr2', and 'cdr3'")
+        valid_region_choices = ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']
+        if cdr not in valid_region_choices:
+            raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are {', '.join(valid_region_choices)}")
         if not abchain:
             seq_str = cls.get_sequence_from_struct(chain)
             abchain = AbChain(seq_str, scheme='imgt')
