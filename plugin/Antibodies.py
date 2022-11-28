@@ -305,19 +305,19 @@ class Antibodies(nanome.AsyncPluginInstance):
         return residues
 
     @classmethod
-    def _get_region_residues(cls, chain, cdr: str, abchain=None):
+    def _get_region_residues(cls, chain, region_name: str, abchain=None):
         """Get nanome residues corresponding to provided cdr name.
 
-        valid cdr names are 'cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4'
+        valid region names are 'cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4'
         """
         valid_region_choices = ['cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4']
-        if cdr not in valid_region_choices:
-            raise ValueError(f"Invalid cdr name: {cdr}. Valid choices are {', '.join(valid_region_choices)}")
+        if region_name not in valid_region_choices:
+            raise ValueError(f"Invalid region name: {region_name}. Valid choices are {', '.join(valid_region_choices)}")
         if not abchain:
             seq_str = cls.get_sequence_from_struct(chain)
             abchain = AbChain(seq_str, scheme='imgt')
 
-        seq_attr_name = f'{cdr}_seq'
+        seq_attr_name = f'{region_name}_seq'
         cdr_seq = getattr(abchain, seq_attr_name)
         cdr_residues = []
         try:
@@ -334,8 +334,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 if residue_sublist_seq == cdr_seq:
                     cdr_residues = residue_sublist
                     break
-        cdr_indices = [res.index for res in cdr_residues]
-        return (res for res in chain.residues if res.index in cdr_indices)
+        return filter(lambda res: res in cdr_residues, chain.residues)
 
     @staticmethod
     def get_sequence_from_pdb(pdb_filepath):
