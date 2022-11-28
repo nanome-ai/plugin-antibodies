@@ -128,10 +128,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         except ChainParseError as e:
             Logs.warning(f"Could find cdr loops for Chain {chain.name}")
 
-        fr1_color = IMGTCDRColorScheme.FR.value
-        fr2_color = IMGTCDRColorScheme.FR.value
-        fr3_color = IMGTCDRColorScheme.FR.value
-        fr4_color = IMGTCDRColorScheme.FR.value
+        fr_color = IMGTCDRColorScheme.FR.value
         chain_type = abchain.chain_type
         if chain_type == 'H':
             cdr1_color = IMGTCDRColorScheme.HEAVY_CDR1.value
@@ -142,36 +139,28 @@ class Antibodies(nanome.AsyncPluginInstance):
             cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
             cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
 
-        cdr1_res_indices = [res.index for res in cdr1_residues]
-        cdr2_res_indices = [res.index for res in cdr2_residues]
-        cdr3_res_indices = [res.index for res in cdr3_residues]
-        fr1_res_indices = [res.index for res in fr1_residues]
-        fr2_res_indices = [res.index for res in fr2_residues]
-        fr3_res_indices = [res.index for res in fr3_residues]
-        fr4_res_indices = [res.index for res in fr4_residues]
+        cdr1_res_serials = [res.serial for res in cdr1_residues]
+        cdr2_res_serials = [res.serial for res in cdr2_residues]
+        cdr3_res_serials = [res.serial for res in cdr3_residues]
+        fr_res_serials = [res.serial for res in itertools.chain(fr1_residues, fr2_residues, fr3_residues, fr4_residues)]
 
         Logs.debug("Coloring cdr loops and framework")
         for residue in chain.residues:
             current_color = Color.Grey()
             use_wire_rendering = False
-            res_index = residue.index
-            if res_index in cdr1_res_indices:
+            res_serial = residue.serial
+            if res_serial in cdr1_res_serials:
                 current_color = cdr1_color
                 use_wire_rendering = True
-            elif res_index in cdr2_res_indices:
+            elif res_serial in cdr2_res_serials:
                 current_color = cdr2_color
                 use_wire_rendering = True
-            elif res_index in cdr3_res_indices:
+            elif res_serial in cdr3_res_serials:
                 current_color = cdr3_color
                 use_wire_rendering = True
-            elif res_index in fr1_res_indices:
-                current_color = fr1_color
-            elif res_index in fr2_res_indices:
-                current_color = fr2_color
-            elif res_index in fr3_res_indices:
-                current_color = fr3_color
-            elif res_index in fr4_res_indices:
-                current_color = fr4_color
+            elif res_serial in fr_res_serials:
+                current_color = fr_color
+
             residue.ribbon_color = current_color
             for atom in residue.atoms:
                 atom.atom_color = current_color
@@ -193,15 +182,17 @@ class Antibodies(nanome.AsyncPluginInstance):
         cls.display_neighboring_atoms(comp, cdr3_residues)
 
     @classmethod
-    def display_neighboring_atoms(cls, comp, residue_list, distance=3.0):
+    def display_neighboring_atoms(cls, comp, residue_list):
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
         Logs.debug("Making neighboring atoms wires")
         cdr_atoms = itertools.chain(*[res.atoms for res in residue_list])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
         for atom in neighbor_atoms:
-            atom.set_visible(True)
-            atom.atom_mode = atom.AtomRenderingMode.Wire
+            is_framework = atom.atom_color.rgb == IMGTCDRColorScheme.FR.value.rgb
+            if not is_framework:
+                atom.set_visible(True)
+                atom.atom_mode = atom.AtomRenderingMode.Wire
         return comp
 
     def on_chain_btn_pressed(self, residue_list, btn):
@@ -218,9 +209,9 @@ class Antibodies(nanome.AsyncPluginInstance):
         ln_chain_btn = ln_chain.create_child_node()
         chain_btn = ln_chain_btn.add_new_button(f'{abchain.chain_type}')
 
-        cdr1_residues = list(self.get_cdr1_residues(chain))
-        cdr2_residues = list(self.get_cdr2_residues(chain))
-        cdr3_residues = list(self.get_cdr3_residues(chain))
+        cdr1_residues = self.get_cdr1_residues(chain)
+        cdr2_residues = self.get_cdr2_residues(chain)
+        cdr3_residues = self.get_cdr3_residues(chain)
         cdr_residues = cdr1_residues + cdr2_residues + cdr3_residues
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
@@ -334,7 +325,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 if residue_sublist_seq == cdr_seq:
                     cdr_residues = residue_sublist
                     break
-        return filter(lambda res: res in cdr_residues, chain.residues)
+        return list(filter(lambda res: res in cdr_residues, chain.residues))
 
     @staticmethod
     def get_sequence_from_pdb(pdb_filepath):
