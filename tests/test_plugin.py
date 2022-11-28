@@ -53,38 +53,38 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             if abchain.chain_type == 'H':
                 # Validate heavy chain CDRs
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR1.value.rgb]))
+                    set(res.ribbon_color for res in cdr1_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR1.value]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR2.value.rgb]))
+                    set(res.ribbon_color for res in cdr2_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR2.value]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR3.value.rgb]))
+                    set(res.ribbon_color for res in cdr3_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR3.value]))
             else:
                 # Validate light chain CDRs
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR1.value.rgb]))
+                    set(res.ribbon_color for res in cdr1_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR1.value]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR2.value.rgb]))
+                    set(res.ribbon_color for res in cdr2_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR2.value]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR3.value.rgb]))
+                    set(res.ribbon_color for res in cdr3_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR3.value]))
             # Validate Framework color matches the chain type.
             self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr1_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
+                set(res.ribbon_color for res in fr1_residues),
+                set([IMGTCDRColorScheme.FR.value]))
             self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr2_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
+                set(res.ribbon_color for res in fr2_residues),
+                set([IMGTCDRColorScheme.FR.value]))
             self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr3_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
+                set(res.ribbon_color for res in fr3_residues),
+                set([IMGTCDRColorScheme.FR.value]))
             self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr4_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
+                set(res.ribbon_color for res in fr4_residues),
+                set([IMGTCDRColorScheme.FR.value]))
 
     def _set_indices(self, comp):
         """Set random indices for residues and atoms.
