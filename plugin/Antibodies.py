@@ -354,7 +354,8 @@ def main():
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
     plugin = nanome.Plugin(
         name, description, 'other', False,
-        integrations=[enums.Integrations.structure_prep])
+        # integrations=[enums.Integrations.structure_prep]
+    )
     plugin.set_plugin_class(Antibodies)
     plugin.run()
 
