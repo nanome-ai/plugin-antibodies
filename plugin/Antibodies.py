@@ -36,8 +36,6 @@ class Antibodies(nanome.AsyncPluginInstance):
     def start(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.menu = ui.Menu()
-        self.menu.root.layout_orientation = enums.LayoutTypes.horizontal
-        self.menu.title = "Antibody Regions"
         self.integration.structure_prep = self.integration_request
 
     @async_callback
@@ -67,26 +65,15 @@ class Antibodies(nanome.AsyncPluginInstance):
         Logs.debug("Updating Structures.")
         self.update_structures_deep([comp])
         self.set_plugin_list_button(run_btn, 'Building menu...', True)
-        self.build_menu(comp)
+        self.menu = self.build_menu(comp)
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
 
-    def build_menu(self, comp: structure.Complex):
-        self.menu.root.children = []
-        for chain in comp.chains:
-            seq_str = self.get_sequence_from_struct(chain)
-            try:
-                abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
-                Logs.debug(f"Could not parse Chain {chain.name}")
-                continue
-            self.add_menu_chain_column(self.menu, chain, abchain)
-
     @classmethod
     def prep_antibody_complex(cls, comp):
         start_time = time.time()
-        comp.set_all_selected(False)
+        # comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
         chains_to_color = []
@@ -177,6 +164,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         cls.label_residue_set(fr4_residues, 'FR4')
 
         comp = chain.complex
+        Logs.debug("Making neighboring atoms wires")
         cls.display_neighboring_atoms(comp, cdr1_residues)
         cls.display_neighboring_atoms(comp, cdr2_residues)
         cls.display_neighboring_atoms(comp, cdr3_residues)
@@ -185,7 +173,6 @@ class Antibodies(nanome.AsyncPluginInstance):
     def display_neighboring_atoms(cls, comp, residue_list):
         # Make sure all atoms near cdr loop are in wire mode
         # This makes viewing interactions easier.
-        Logs.debug("Making neighboring atoms wires")
         cdr_atoms = itertools.chain(*[res.atoms for res in residue_list])
         neighbor_atoms = get_neighboring_atoms(comp, cdr_atoms)
         for atom in neighbor_atoms:
@@ -195,17 +182,25 @@ class Antibodies(nanome.AsyncPluginInstance):
                 atom.atom_mode = atom.AtomRenderingMode.Wire
         return comp
 
-    def on_chain_btn_pressed(self, residue_list, btn):
-        self.zoom_on_structures(residue_list)
-
-    def on_cdr_btn_pressed(self, residue_list, btn):
-        # Select atoms
-        for atom in itertools.chain(*[res.atoms for res in residue_list]):
-            atom.selected = btn.selected
-        self.update_structures_deep(residue_list)
+    def build_menu(self, comp: structure.Complex):
+        menu = ui.Menu()
+        menu.root.layout_orientation = enums.LayoutTypes.horizontal
+        menu.title = f"Antibody Regions {comp.full_name}"
+        comp.register_selection_changed_callback(self.on_selection_changed)
+        for chain in comp.chains:
+            seq_str = self.get_sequence_from_struct(chain)
+            try:
+                abchain = AbChain(seq_str, scheme='imgt')
+            except ChainParseError as e:
+                Logs.debug(f"Could not parse Chain {chain.name}")
+                continue
+            self.add_menu_chain_column(menu, chain, abchain)
+        self.update_cdr_btns(menu, comp)
+        return menu
 
     def add_menu_chain_column(self, menu: ui.Menu, chain: structure.Chain, abchain: AbChain):
         ln_chain = menu.root.create_child_node()
+        ln_chain.chain_index = chain.index
         ln_chain_btn = ln_chain.create_child_node()
         chain_btn = ln_chain_btn.add_new_button(f'{abchain.chain_type}')
 
@@ -219,20 +214,62 @@ class Antibodies(nanome.AsyncPluginInstance):
         ln_cdr1 = ln_chain.create_child_node()
         cdr1_btn = ln_cdr1.add_new_button(f"CDR{abchain.chain_type}1")
         cdr1_btn.toggle_on_press = True
+        cdr1_btn.cdr_residues = cdr1_residues
         cdr1_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr1_residues))
 
         ln_cdr2 = ln_chain.create_child_node()
         cdr2_btn = ln_cdr2.add_new_button(f"CDR{abchain.chain_type}2")
         cdr2_btn.toggle_on_press = True
+        cdr2_btn.cdr_residues = cdr2_residues
         cdr2_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr2_residues))
 
         ln_cdr3 = ln_chain.create_child_node()
         cdr3_btn = ln_cdr3.add_new_button(f"CDR{abchain.chain_type}3")
         cdr3_btn.toggle_on_press = True
+        cdr3_btn.cdr_residues = cdr3_residues
         cdr3_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
+
+    def on_selection_changed(self, comp):
+        """Update the selection in the plugin."""
+        Logs.debug(f"Selection changes for {comp.full_name}")
+        self.update_cdr_btns(self.menu, comp)
+        self.update_menu(self.menu, comp)
+        Logs.debug("Finished updating selections")
+
+    def update_cdr_btns(self, menu, comp):
+        btns_to_update = []
+        for ln in menu.root.get_children():
+            # Get most up to date chain selections
+            chain_index = ln.chain_index
+            comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
+            cdr1_btn = ln.get_children()[1].get_content()
+            cdr2_btn = ln.get_children()[2].get_content()
+            cdr3_btn = ln.get_children()[3].get_content()
+            
+            abchain = AbChain(self.get_sequence_from_struct(comp_chain), scheme='imgt')
+            cdr1_residues = self.get_cdr1_residues(comp_chain, abchain=abchain)
+            cdr2_residues = self.get_cdr2_residues(comp_chain, abchain=abchain)
+            cdr3_residues = self.get_cdr3_residues(comp_chain, abchain=abchain)
+            cdr1_btn.selected = any([
+                atom.selected for atom in itertools.chain(*[res.atoms for res in cdr1_residues])])
+            cdr2_btn.selected = any([
+                atom.selected for atom in itertools.chain(*[res.atoms for res in cdr2_residues])])
+            cdr3_btn.selected = any([
+                atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
+            btns_to_update.extend([cdr1_btn, cdr2_btn, cdr3_btn])
+        self.update_content(*btns_to_update)
+
+    def on_cdr_btn_pressed(self, residue_list, btn):
+        # Select atoms
+        for atom in itertools.chain(*[res.atoms for res in residue_list]):
+            atom.selected = btn.selected
+        self.update_structures_deep(residue_list)
+
+    def on_chain_btn_pressed(self, residue_list, btn):
+        self.zoom_on_structures(residue_list)
 
     @staticmethod
     def label_residue_set(residue_list, label_text):
