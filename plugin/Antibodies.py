@@ -249,8 +249,12 @@ class Antibodies(nanome.AsyncPluginInstance):
             cdr1_btn = ln.get_children()[1].get_content()
             cdr2_btn = ln.get_children()[2].get_content()
             cdr3_btn = ln.get_children()[3].get_content()
-            
-            abchain = AbChain(cls.get_sequence_from_struct(comp_chain), scheme='imgt')
+            seq_str = cls.get_sequence_from_struct(comp_chain)
+            try:
+                abchain = AbChain(seq_str, scheme='imgt')
+            except ChainParseError as e:
+                Logs.debug(f"Could not parse Chain {comp_chain.name}")
+                continue
             cdr1_residues = cls.get_cdr1_residues(comp_chain, abchain=abchain)
             cdr2_residues = cls.get_cdr2_residues(comp_chain, abchain=abchain)
             cdr3_residues = cls.get_cdr3_residues(comp_chain, abchain=abchain)
@@ -262,7 +266,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
 
     def on_cdr_btn_pressed(self, residue_list, btn):
-        """When cdr button pressed, select all atoms in the cdr residues."""
+        """When cdr button pressed, select all atoms in the residue_list."""
         for atom in itertools.chain(*[res.atoms for res in residue_list]):
             atom.selected = btn.selected
         self.update_structures_deep(residue_list)
