@@ -236,11 +236,12 @@ class Antibodies(nanome.AsyncPluginInstance):
         """Update the selection in the plugin."""
         Logs.debug(f"Selection changes for {comp.full_name}")
         self.update_cdr_btns(self.menu, comp)
-        self.update_menu(self.menu, comp)
         Logs.debug("Finished updating selections")
+        self.update_menu(self.menu)
 
-    def update_cdr_btns(self, menu, comp):
-        btns_to_update = []
+    @classmethod
+    def update_cdr_btns(cls, menu, comp):
+        """Update the CDR buttons to reflect the current selections."""
         for ln in menu.root.get_children():
             # Get most up to date chain selections
             chain_index = ln.chain_index
@@ -249,21 +250,19 @@ class Antibodies(nanome.AsyncPluginInstance):
             cdr2_btn = ln.get_children()[2].get_content()
             cdr3_btn = ln.get_children()[3].get_content()
             
-            abchain = AbChain(self.get_sequence_from_struct(comp_chain), scheme='imgt')
-            cdr1_residues = self.get_cdr1_residues(comp_chain, abchain=abchain)
-            cdr2_residues = self.get_cdr2_residues(comp_chain, abchain=abchain)
-            cdr3_residues = self.get_cdr3_residues(comp_chain, abchain=abchain)
+            abchain = AbChain(cls.get_sequence_from_struct(comp_chain), scheme='imgt')
+            cdr1_residues = cls.get_cdr1_residues(comp_chain, abchain=abchain)
+            cdr2_residues = cls.get_cdr2_residues(comp_chain, abchain=abchain)
+            cdr3_residues = cls.get_cdr3_residues(comp_chain, abchain=abchain)
             cdr1_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr1_residues])])
             cdr2_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr2_residues])])
             cdr3_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
-            btns_to_update.extend([cdr1_btn, cdr2_btn, cdr3_btn])
-        self.update_content(*btns_to_update)
 
     def on_cdr_btn_pressed(self, residue_list, btn):
-        # Select atoms
+        """When cdr button pressed, select all atoms in the cdr residues."""
         for atom in itertools.chain(*[res.atoms for res in residue_list]):
             atom.selected = btn.selected
         self.update_structures_deep(residue_list)
@@ -278,10 +277,11 @@ class Antibodies(nanome.AsyncPluginInstance):
         middle_residue.labeled = True
         middle_residue.label_text = label_text
 
-    def validate_antibody(self, comp):
+    @classmethod
+    def validate_antibody(cls, comp):
         # Make sure at least one chain can be parsed with ABChain
         for chain in comp.chains:
-            seq_str = self.get_sequence_from_struct(chain)
+            seq_str = cls.get_sequence_from_struct(chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
                 if abchain:
