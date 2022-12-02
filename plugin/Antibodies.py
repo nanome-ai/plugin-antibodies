@@ -38,12 +38,8 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.menu = ui.Menu()
         self.integration.structure_prep = self.integration_request
 
-    @async_callback
-    async def integration_request(self, request):
-        complexes = request.get_args()
-        comp = complexes[0]
-        self.prep_antibody_complex(comp)
-        request.send_response([comp])
+    def on_stop(self):
+        self.temp_dir.cleanup()
 
     @async_callback
     async def on_run(self):
@@ -69,6 +65,14 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.menu.enabled = True
         self.update_menu(self.menu)
         self._reset_run_btn()
+        return comp
+
+    @async_callback
+    async def integration_request(self, request):
+        complexes = request.get_args()
+        comp = complexes[0]
+        self.prep_antibody_complex(comp)
+        request.send_response([comp])
 
     @classmethod
     def prep_antibody_complex(cls, comp):

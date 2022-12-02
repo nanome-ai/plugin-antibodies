@@ -26,18 +26,49 @@ def run_awaitable(awaitable, *args, **kwargs):
 class AntibodiesPluginTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.plugin = MagicMock()
+        self.plugin = Antibodies()
         PluginInstance._instance = self.plugin
         nanome._internal._network._plugin_network.PluginNetwork._instance = MagicMock()
 
+        # Mock args that are passed to setup plugin instance networking
+        session_id = plugin_network = pm_queue_in = pm_queue_out = custom_data = \
+            log_pipe_conn = original_version_table = permissions = MagicMock()
+        self.plugin._setup(
+            session_id, plugin_network, pm_queue_in, pm_queue_out, log_pipe_conn,
+            original_version_table, custom_data, permissions
+        )
+        self.plugin.start()
+
         self.pdb_file = os.path.join(fixtures_dir, '2q8b.pdb')
         self.complex = structure.Complex.io.from_pdb(path=self.pdb_file)
+
+    def tearDown(self) -> None:
+        self.plugin.on_stop()
+        return super().tearDown()
+
+    @unittest.skip("Not working yet")
+    def test_on_run(self):
+        """Validate that the plugin starts properly."""
+        async def validate_on_run(self):
+            self.complex.set_all_selected(True)
+            fut = asyncio.Future()
+            fut.set_result([self.complex])
+            self.plugin.request_complex_list = MagicMock(return_value=fut)
+            self.plugin.request_complexes = MagicMock(return_value=fut)
+            self.plugin.update_structures_deep = MagicMock()
+            comp = await self.plugin.on_run()
+            self._validate_complex_coloring(comp)
+        run_awaitable(validate_on_run, self)
 
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
         comp = self.complex
         self._set_indices(comp)
         Antibodies.prep_antibody_complex(comp)
+        self._validate_complex_coloring(comp)
+
+    
+    def _validate_complex_coloring(self, comp):
         # Get abchain to validate colors for each region.
         for chain in comp.chains:
             seq_str = Antibodies.get_sequence_from_struct(chain)
@@ -59,38 +90,38 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             if abchain.chain_type == 'H':
                 # Validate heavy chain CDRs
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR1.value]))
+                    set(res.ribbon_color.rgb for res in cdr1_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR1.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR2.value]))
+                    set(res.ribbon_color.rgb for res in cdr2_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR2.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR3.value]))
+                    set(res.ribbon_color.rgb for res in cdr3_residues),
+                    set([IMGTCDRColorScheme.HEAVY_CDR3.value.rgb]))
             else:
                 # Validate light chain CDRs
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR1.value]))
+                    set(res.ribbon_color.rgb for res in cdr1_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR1.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR2.value]))
+                    set(res.ribbon_color.rgb for res in cdr2_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR2.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR3.value]))
+                    set(res.ribbon_color.rgb for res in cdr3_residues),
+                    set([IMGTCDRColorScheme.LIGHT_CDR3.value.rgb]))
             # Validate Framework color matches the chain type.
             self.assertEqual(
-                set(res.ribbon_color for res in fr1_residues),
-                set([IMGTCDRColorScheme.FR.value]))
+                set(res.ribbon_color.rgb for res in fr1_residues),
+                set([IMGTCDRColorScheme.FR.value.rgb]))
             self.assertEqual(
-                set(res.ribbon_color for res in fr2_residues),
-                set([IMGTCDRColorScheme.FR.value]))
+                set(res.ribbon_color.rgb for res in fr2_residues),
+                set([IMGTCDRColorScheme.FR.value.rgb]))
             self.assertEqual(
-                set(res.ribbon_color for res in fr3_residues),
-                set([IMGTCDRColorScheme.FR.value]))
+                set(res.ribbon_color.rgb for res in fr3_residues),
+                set([IMGTCDRColorScheme.FR.value.rgb]))
             self.assertEqual(
-                set(res.ribbon_color for res in fr4_residues),
-                set([IMGTCDRColorScheme.FR.value]))
+                set(res.ribbon_color.rgb for res in fr4_residues),
+                set([IMGTCDRColorScheme.FR.value.rgb]))
     
     def test_build_menu(self):
         """Validate that the menu is built properly."""
