@@ -81,7 +81,6 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         Antibodies.prep_antibody_complex(comp)
         self._validate_complex_coloring(comp)
 
-    
     def _validate_complex_coloring(self, comp):
         # Get abchain to validate colors for each region.
         for chain in comp.chains:
@@ -136,7 +135,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             self.assertEqual(
                 set(res.ribbon_color.rgb for res in fr4_residues),
                 set([IMGTCDRColorScheme.FR.value.rgb]))
-    
+
     def test_build_menu(self):
         """Validate that the menu is built properly."""
         plugin = Antibodies()
