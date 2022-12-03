@@ -297,7 +297,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                     return True
             except ChainParseError as e:
                 continue
-            return False
+        return False
 
     @classmethod
     def get_cdr1_residues(cls, struc, abchain=None):

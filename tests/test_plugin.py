@@ -60,7 +60,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             comp = await self.plugin.on_run()
             self._validate_complex_coloring(comp)
         run_awaitable(validate_on_run, self)
-    
+
     def test_integration(self):
         """Validate that the plugin starts properly."""
         async def validate_integration(self):
