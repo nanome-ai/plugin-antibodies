@@ -73,6 +73,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         comp = complexes[0]
         self.prep_antibody_complex(comp)
         request.send_response([comp])
+        return comp
 
     @classmethod
     def prep_antibody_complex(cls, comp):

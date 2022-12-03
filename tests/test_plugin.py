@@ -60,6 +60,19 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             comp = await self.plugin.on_run()
             self._validate_complex_coloring(comp)
         run_awaitable(validate_on_run, self)
+    
+    def test_integration(self):
+        """Validate that the plugin starts properly."""
+        async def validate_integration(self):
+            comp = self.complex
+            # fut = asyncio.Future()
+            # fut.set_result([comp])
+            request = MagicMock()
+            request.get_args.return_value = [comp]
+            # self.plugin.update_structures_deep = MagicMock()
+            modified_comp = await self.plugin.integration_request(request)
+            self._validate_complex_coloring(modified_comp)
+        run_awaitable(validate_integration, self)
 
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
@@ -130,14 +143,6 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         menu = plugin.build_menu(self.complex)
         self.assertEqual(len(menu.root.get_children()), 2)
 
-    def test_validate_antibody(self):
-        """Validate that antibodys and non-antibody structures are recognized."""
-        is_antibody = Antibodies.validate_antibody(self.complex)
-        self.assertTrue(is_antibody)
-        non_antibody = structure.Complex.io.from_pdb(path=os.path.join(fixtures_dir, '1tyl.pdb'))
-        is_antibody = Antibodies.validate_antibody(non_antibody)
-        self.assertFalse(is_antibody)
-    
     def test_validate_antibody(self):
         """Validate that antibodys and non-antibody structures are recognized."""
         is_antibody = Antibodies.validate_antibody(self.complex)
