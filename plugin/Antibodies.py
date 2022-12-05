@@ -47,7 +47,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         Logs.debug("Loading Complex")
         self.set_plugin_list_button(run_btn, 'Loading Complex', False)
         comp_list = await self.request_complex_list()
-        shallow_comp = next((cmp for cmp in comp_list if any(atom.selected for atom in cmp.atoms)), None)
+        shallow_comp = next((cmp for cmp in comp_list if cmp.get_selected()), None)
         if not shallow_comp:
             self.send_notification(enums.NotificationTypes.error, "Please select an antibody")
             self._reset_run_btn()

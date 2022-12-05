@@ -50,8 +50,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         """Validate that the plugin starts properly."""
         async def validate_on_run(self):
             comp = self.complex
-            comp.set_all_selected(True)
-            assert any(atom.selected for atom in comp.atoms)
+            comp._selected = True
             fut = asyncio.Future()
             fut.set_result([comp])
             self.plugin.request_complex_list = MagicMock(return_value=fut)
