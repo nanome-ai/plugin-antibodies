@@ -39,6 +39,15 @@ jobs:
         run: |
           git push --follow-tags
 
+  check-job-output:
+    needs: bump-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job output
+        run: |
+          echo "New version number: ${{needs.bump-version.outputs.version_number}}"
+          echo "All outputs: ${{needs.bump-version.outputs}}"
+
   push-to-registry:
     needs: bump-version
     uses: ./.github/workflows/push-to-registry.yml
