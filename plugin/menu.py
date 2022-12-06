@@ -37,7 +37,7 @@ class RegionMenu:
 
     def format_region_btn(self, region_name, mesh_color, cdr_residues):
         if not hasattr(self, '__prefab_btn'):
-            json_path = os.path.join(os.getcwd(), 'plugin', 'region_btn.json')
+            json_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'region_btn.json')
             self.__prefab_btn = ui.LayoutNode.io.from_json(json_path)
         ln_cdr = self.__prefab_btn.clone()
         cdr_btn = ln_cdr.get_children()[0].get_content()
@@ -49,19 +49,32 @@ class RegionMenu:
         cdr_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr_residues))
         return ln_cdr
+    
+    def format_chain_zoom_btn(self, chain_type: str, cdr_residues: list):
+        if not hasattr(self, '__prefab_chain_btn'):
+            json_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'chain_btn.json')
+            self.__prefab_chain_btn = ui.LayoutNode.io.from_json(json_path)
+        
+        ln_chain_btn = self.__prefab_chain_btn.clone()
+        chain_btn = ln_chain_btn.get_children()[0].get_content()
+        chain_btn_label = ln_chain_btn.get_children()[0].get_children()[0].get_content()
+        chain_btn_icon = ln_chain_btn.get_children()[0].get_children()[1].get_content()
+        chain_btn_label.text_value = chain_type
+        chain_btn_icon.file_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'ZoomIcon.png')
+        chain_btn.register_pressed_callback(
+            functools.partial(self.on_chain_btn_pressed, cdr_residues))
+        
+        return ln_chain_btn
 
     def add_menu_chain_column(self, menu: ui.Menu, chain: structure.Chain, abchain: AbChain):
         ln_chain = menu.root.create_child_node()
         ln_chain.chain_index = chain.index
-        ln_chain_btn = ln_chain.create_child_node()
-        chain_btn = ln_chain_btn.add_new_button(f'{abchain.chain_type}')
-
         cdr1_residues = self._plugin.get_cdr1_residues(chain)
         cdr2_residues = self._plugin.get_cdr2_residues(chain)
         cdr3_residues = self._plugin.get_cdr3_residues(chain)
         cdr_residues = cdr1_residues + cdr2_residues + cdr3_residues
-        chain_btn.register_pressed_callback(
-            functools.partial(self.on_chain_btn_pressed, cdr_residues))
+        ln_chain_btn = self.format_chain_zoom_btn(abchain.chain_type, cdr_residues)
+        ln_chain.add_child(ln_chain_btn)
 
         chain_type = abchain.chain_type
         if chain_type == 'H':
