@@ -49,12 +49,12 @@ class RegionMenu:
         cdr_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr_residues))
         return ln_cdr
-    
+
     def format_chain_zoom_btn(self, chain_type: str, cdr_residues: list):
         if not hasattr(self, '__prefab_chain_btn'):
             json_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'chain_btn.json')
             self.__prefab_chain_btn = ui.LayoutNode.io.from_json(json_path)
-        
+
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
         chain_btn_label = ln_chain_btn.get_children()[0].get_children()[0].get_content()
@@ -63,7 +63,7 @@ class RegionMenu:
         chain_btn_icon.file_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'ZoomIcon.png')
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
-        
+
         return ln_chain_btn
 
     def add_menu_chain_column(self, menu: ui.Menu, chain: structure.Chain, abchain: AbChain):
@@ -113,7 +113,7 @@ class RegionMenu:
         self.update_cdr_btns(self._menu, comp)
         Logs.debug("Finished updating selections")
         self._plugin.update_menu(self._menu)
-    
+
     def update_cdr_btns(self, menu, comp):
         """Update the CDR buttons to reflect the current selections."""
         for ln in menu.root.get_children():
