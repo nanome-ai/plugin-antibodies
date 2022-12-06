@@ -29,7 +29,22 @@ class RegionMenu:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
             self.add_menu_chain_column(self._menu, chain, abchain)
-        # self.update_cdr_btns(self._menu, comp)
+        self.update_cdr_btns(self._menu, comp)
+
+    def format_region_btn(self, region_name, mesh_color, cdr_residues):
+        if not hasattr(self, '__prefab_btn'):
+            json_path = os.path.join(os.getcwd(), 'plugin', 'region_btn.json')
+            self.__prefab_btn = ui.LayoutNode.io.from_json(json_path)
+        ln_cdr = self.__prefab_btn.clone()
+        cdr_btn = ln_cdr.get_children()[0].get_content()
+        cdr_btn.text.value.set_all(region_name)
+        cdr_mesh = ln_cdr.get_children()[0].get_children()[0].get_content()
+        cdr_mesh.mesh_color = mesh_color
+        cdr_btn.toggle_on_press = True
+        cdr_btn.cdr_residues = cdr_residues
+        cdr_btn.register_pressed_callback(
+            functools.partial(self.on_cdr_btn_pressed, cdr_residues))
+        return ln_cdr
 
     def add_menu_chain_column(self, menu: ui.Menu, chain: structure.Chain, abchain: AbChain):
         ln_chain = menu.root.create_child_node()
@@ -54,38 +69,17 @@ class RegionMenu:
             cdr2_color = IMGTCDRColorScheme.LIGHT_CDR2.value
             cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
 
-        ln_cdr1 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
-        cdr1_btn = ln_cdr1.get_children()[0].get_content()
-        cdr1_btn.text.value.set_all(f"CDR{abchain.chain_type}1")
-        cdr1_mesh = ln_cdr1.get_children()[0].get_children()[0].get_content()
-        cdr1_mesh.mesh_color = cdr1_color
+        cdr1_region_name = f"CDR{abchain.chain_type}1"
+        ln_cdr1 = self.format_region_btn(cdr1_region_name, cdr1_color, cdr1_residues)
         ln_chain.add_child(ln_cdr1)
-        cdr1_btn.toggle_on_press = True
-        cdr1_btn.cdr_residues = cdr1_residues
-        cdr1_btn.register_pressed_callback(
-            functools.partial(self.on_cdr_btn_pressed, cdr1_residues))
 
-        ln_cdr2 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
-        cdr2_btn = ln_cdr2.get_children()[0].get_content()
-        cdr2_mesh = ln_cdr2.get_children()[0].get_children()[0].get_content()
-        cdr2_mesh.mesh_color = cdr2_color
-        cdr2_btn.text.value.set_all(f"CDR{abchain.chain_type}2")
+        cdr2_region_name = f"CDR{abchain.chain_type}2"
+        ln_cdr2 = self.format_region_btn(cdr2_region_name, cdr2_color, cdr2_residues)
         ln_chain.add_child(ln_cdr2)
-        cdr2_btn.toggle_on_press = True
-        cdr2_btn.cdr_residues = cdr2_residues
-        cdr2_btn.register_pressed_callback(
-            functools.partial(self.on_cdr_btn_pressed, cdr2_residues))
 
-        ln_cdr3 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
-        cdr3_btn = ln_cdr3.get_children()[0].get_content()
-        cdr3_mesh = ln_cdr3.get_children()[0].get_children()[0].get_content()
-        cdr3_mesh.mesh_color = cdr3_color
-        cdr3_btn.text.value.set_all(f"CDR{abchain.chain_type}3")
+        cdr3_region_name = f"CDR{abchain.chain_type}3"
+        ln_cdr3 = self.format_region_btn(cdr3_region_name, cdr3_color, cdr3_residues)
         ln_chain.add_child(ln_cdr3)
-        cdr3_btn.toggle_on_press = True
-        cdr3_btn.cdr_residues = cdr3_residues
-        cdr3_btn.register_pressed_callback(
-            functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
 
     def on_cdr_btn_pressed(self, residue_list, btn):
         """When cdr button pressed, select all atoms in the residue_list."""
@@ -99,9 +93,9 @@ class RegionMenu:
     def on_selection_changed(self, comp):
         """Update the selection in the plugin."""
         Logs.debug(f"Selection changes for {comp.full_name}")
-        # self.update_cdr_btns(self._menu, comp)
-        # Logs.debug("Finished updating selections")
-        # self._plugin.update_menu(self._menu)
+        self.update_cdr_btns(self._menu, comp)
+        Logs.debug("Finished updating selections")
+        self._plugin.update_menu(self._menu)
     
     def update_cdr_btns(self, menu, comp):
         """Update the CDR buttons to reflect the current selections."""
@@ -109,9 +103,9 @@ class RegionMenu:
             # Get most up to date chain selections
             chain_index = ln.chain_index
             comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
-            cdr1_btn = ln.get_children()[1].get_content()
-            cdr2_btn = ln.get_children()[2].get_content()
-            cdr3_btn = ln.get_children()[3].get_content()
+            cdr1_btn = ln.get_children()[1].get_children()[0].get_content()
+            cdr2_btn = ln.get_children()[2].get_children()[0].get_content()
+            cdr3_btn = ln.get_children()[3].get_children()[0].get_content()
             seq_str = self._plugin.get_sequence_from_struct(comp_chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
