@@ -32,15 +32,16 @@ jobs:
       - name: get new version number
         id: new_version_number
         run: |
-          new_ver=$(cat setup.cfg | grep current_version | awk -F "=" '{print $2}' | xargs)
+          new_ver=echo $(cat setup.cfg | grep current_version | awk -F "=" '{print $2}' | xargs)
           echo "version_number=$new_ver" >> $GITHUB_OUTPUT
+          echo version_number=$new_ver
       - name: Push to GitHub
         run: |
           git push --follow-tags
 
-  push-to-registry:
-    needs: bump-version
-    uses: ./.github/workflows/push-to-registry.yml
-    with:
-      tag: ${{needs.bump-version.outputs.version_number}}
-    secrets: inherit
+  # push-to-registry:
+  #   needs: bump-version
+  #   uses: ./.github/workflows/push-to-registry.yml
+  #   with:
+  #     tag: ${{needs.bump-version.outputs.version_number}}
+  #   secrets: inherit
