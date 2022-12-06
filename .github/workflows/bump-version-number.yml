@@ -32,9 +32,9 @@ jobs:
       - name: get new version number
         id: new_version_number
         run: |
-          new_ver=echo $(cat setup.cfg | grep current_version | awk -F "=" '{print $2}' | xargs)
+          new_ver=$(cat setup.cfg | grep current_version | awk -F "=" '{print $2}' | xargs)
           echo "version_number=$new_ver" >> $GITHUB_OUTPUT
-          echo version_number=$new_ver
+          echo "version_number=$new_ver"
       - name: Push to GitHub
         run: |
           git push --follow-tags
