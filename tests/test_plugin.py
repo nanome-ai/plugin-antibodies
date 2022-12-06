@@ -135,12 +135,6 @@ class AntibodiesPluginTestCase(unittest.TestCase):
                 set(res.ribbon_color.rgb for res in fr4_residues),
                 set([IMGTCDRColorScheme.FR.value.rgb]))
 
-    def test_build_menu(self):
-        """Validate that the menu is built properly."""
-        plugin = Antibodies()
-        menu = plugin.build_menu(self.complex)
-        self.assertEqual(len(menu.root.get_children()), 2)
-
     def test_validate_antibody(self):
         """Validate that antibodys and non-antibody structures are recognized."""
         is_antibody = Antibodies.validate_antibody(self.complex)
@@ -148,29 +142,6 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         non_antibody = structure.Complex.io.from_pdb(path=os.path.join(fixtures_dir, '1tyl.pdb'))
         is_antibody = Antibodies.validate_antibody(non_antibody)
         self.assertFalse(is_antibody)
-
-    def test_update_cdr_btns(self):
-        # Validate button states change when a CDR is selected or deselected.
-        plugin = Antibodies()
-        menu = plugin.build_menu(self.complex)
-        # Assert None of the chains are selected, and all buttons are deselected.
-        atoms_selected = any(atom.selected for atom in self.complex.atoms)
-        self.assertFalse(atoms_selected)
-        for ln_chain_col in menu.root.get_children():
-            for ln_btn in ln_chain_col.get_children()[1:]:
-                btn = ln_btn.get_content()
-                self.assertFalse(btn.selected)
-        heavy_chain = next(ch for ch in self.complex.chains if ch.name == 'H')
-        for atom in heavy_chain.atoms:
-            atom.selected = True
-
-        Antibodies.update_cdr_btns(menu, self.complex)
-        for ln_chain_col in menu.root.get_children():
-            top_btn = ln_chain_col.get_children()[0].get_content()
-            expected_selected = top_btn.text.active == 'H'
-            for ln_btn in ln_chain_col.get_children()[1:]:
-                btn = ln_btn.get_content()
-                self.assertEqual(btn.selected, expected_selected)
 
     def _set_indices(self, comp):
         """Set random indices for residues and atoms.
