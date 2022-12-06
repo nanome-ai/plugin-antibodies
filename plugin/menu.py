@@ -16,6 +16,10 @@ class RegionMenu:
         self._menu = ui.Menu()
         self._plugin = plugin
 
+    @property
+    def root(self):
+        return self._menu.root
+
     def build_menu(self, comp: structure.Complex):
         self._menu = ui.Menu()
         self._menu.root.layout_orientation = enums.LayoutTypes.horizontal
