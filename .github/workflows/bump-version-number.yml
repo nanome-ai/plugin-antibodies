@@ -34,9 +34,6 @@ jobs:
         run: |
           new_ver=$(cat setup.cfg | grep current_version | awk -F "=" '{print $2}' | xargs)
           echo "version_number=$new_ver" >> $GITHUB_OUTPUT
-      - name: print-job-outputs
-        run: |
-          echo "version_number: ${{outputs.version_number}}"
       - name: Push to GitHub
         run: |
           git push --follow-tags
