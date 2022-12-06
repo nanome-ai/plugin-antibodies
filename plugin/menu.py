@@ -55,36 +55,43 @@ class RegionMenu:
             cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
 
         ln_cdr1 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
-        cdr1_mesh = ln_cdr1.get_children()[0].get_content()
-        cdr1_mesh.mesh_color = cdr1_color
-        cdr1_btn = ln_cdr1.get_children()[1].get_content()
+        cdr1_btn = ln_cdr1.get_children()[0].get_content()
         cdr1_btn.text.value.set_all(f"CDR{abchain.chain_type}1")
-        # ln_cdr1.set_content(cdr1_btn)
+        cdr1_mesh = ln_cdr1.get_children()[0].get_children()[0].get_content()
+        cdr1_mesh.mesh_color = cdr1_color
         ln_chain.add_child(ln_cdr1)
         cdr1_btn.toggle_on_press = True
         cdr1_btn.cdr_residues = cdr1_residues
         cdr1_btn.register_pressed_callback(
             functools.partial(self.on_cdr_btn_pressed, cdr1_residues))
 
-        # ln_cdr2 = ln_chain.create_child_node()
-        # cdr2_btn = ln_cdr2.add_new_button(f"CDR{abchain.chain_type}2")
-        # cdr2_btn.toggle_on_press = True
-        # cdr2_btn.cdr_residues = cdr2_residues
-        # cdr2_btn.register_pressed_callback(
-        #     functools.partial(self.on_cdr_btn_pressed, cdr2_residues))
+        ln_cdr2 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
+        cdr2_btn = ln_cdr2.get_children()[0].get_content()
+        cdr2_mesh = ln_cdr2.get_children()[0].get_children()[0].get_content()
+        cdr2_mesh.mesh_color = cdr2_color
+        cdr2_btn.text.value.set_all(f"CDR{abchain.chain_type}2")
+        ln_chain.add_child(ln_cdr2)
+        cdr2_btn.toggle_on_press = True
+        cdr2_btn.cdr_residues = cdr2_residues
+        cdr2_btn.register_pressed_callback(
+            functools.partial(self.on_cdr_btn_pressed, cdr2_residues))
 
-        # ln_cdr3 = ln_chain.create_child_node()
-        # cdr3_btn = ln_cdr3.add_new_button(f"CDR{abchain.chain_type}3")
-        # cdr3_btn.toggle_on_press = True
-        # cdr3_btn.cdr_residues = cdr3_residues
-        # cdr3_btn.register_pressed_callback(
-        #     functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
+        ln_cdr3 = ui.LayoutNode.io.from_json(f"{os.getcwd()}/plugin/region_btn.json")
+        cdr3_btn = ln_cdr3.get_children()[0].get_content()
+        cdr3_mesh = ln_cdr3.get_children()[0].get_children()[0].get_content()
+        cdr3_mesh.mesh_color = cdr3_color
+        cdr3_btn.text.value.set_all(f"CDR{abchain.chain_type}3")
+        ln_chain.add_child(ln_cdr3)
+        cdr3_btn.toggle_on_press = True
+        cdr3_btn.cdr_residues = cdr3_residues
+        cdr3_btn.register_pressed_callback(
+            functools.partial(self.on_cdr_btn_pressed, cdr3_residues))
 
     def on_cdr_btn_pressed(self, residue_list, btn):
         """When cdr button pressed, select all atoms in the residue_list."""
         for atom in itertools.chain(*[res.atoms for res in residue_list]):
             atom.selected = btn.selected
-        self.update_structures_deep(residue_list)
+        self._plugin.update_structures_deep(residue_list)
 
     def on_chain_btn_pressed(self, residue_list, btn):
         self._plugin.zoom_on_structures(residue_list)
