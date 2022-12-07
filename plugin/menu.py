@@ -41,7 +41,7 @@ class RegionMenu:
                 continue
             else:
                 antibody_chains.append((chain, abchain))
-        
+
         row_count = max(len(antibody_chains) // 6, 1)
         cols_per_row = len(antibody_chains) // row_count
 

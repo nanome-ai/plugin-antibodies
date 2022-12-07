@@ -65,7 +65,7 @@ class RegionMenuTestCase(unittest.TestCase):
         self.menu.build_menu(self.complex)
         self.menu.on_selection_changed(self.complex)
         self.plugin.update_menu.assert_called_once()
-    
+
     def test_on_cdr_btn_pressed(self):
         """Validate that the menu is updated when a CDR is selected or deselected."""
         self.plugin._network = MagicMock()
@@ -73,7 +73,7 @@ class RegionMenuTestCase(unittest.TestCase):
         btn = next(self.menu.chain_btn_sets).get_children()[1].get_children()[0].get_content()
         for atom in self.complex.atoms:
             atom.selected = False
-        self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)        
+        self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)
         i = 0
         res_set = set()
         for atom in self.complex.atoms:
@@ -81,7 +81,7 @@ class RegionMenuTestCase(unittest.TestCase):
                 break
             res_set.add(atom.residue)
             i += 1
-        btn.selected = True 
+        btn.selected = True
         self.menu.on_cdr_btn_pressed(list(res_set), btn)
         for res in res_set:
             for atom in res.atoms:
