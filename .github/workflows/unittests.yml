@@ -12,5 +12,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: cd docker && ./build.sh
-    - run: docker run --rm antibodies:latest pip install coverage;coverage run --source plugin -m unittest discover tests;coverage report
+    - run: docker run --rm antibodies:latest /bin/bash -c "pip install coverage && coverage run --source plugin -m unittest discover tests && coverage report"
 
