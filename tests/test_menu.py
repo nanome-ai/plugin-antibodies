@@ -34,8 +34,9 @@ class RegionMenuTestCase(unittest.TestCase):
 
     def test_build_menu(self):
         """Validate that the menu is built properly."""
+        self.assertEqual(len(list(self.menu.chain_btn_sets)), 0)
         self.menu.build_menu(self.complex)
-        self.assertEqual(len(self.menu.root.get_children()), 2)
+        self.assertEqual(len(list(self.menu.chain_btn_sets)), 2)
 
     def test_update_cdr_btns(self):
         # Validate button states change when a CDR is selected or deselected.
@@ -58,18 +59,3 @@ class RegionMenuTestCase(unittest.TestCase):
             for ln_btn in ln_chain_col.get_children()[1:]:
                 btn = ln_btn.get_content()
                 self.assertEqual(btn.selected, expected_selected)
-
-    def _set_indices(self, comp):
-        """Set random indices for residues and atoms.
-
-        Prevents issues with duplicate indices.
-        """
-        min_index = 100000
-        max_index = 999999
-        comp.index = randint(min_index, max_index)
-        for chain in comp.chains:
-            chain.index = randint(min_index, max_index)
-            for residue in chain.residues:
-                residue.index = randint(min_index, max_index)
-                for atom in residue.atoms:
-                    atom.index = randint(min_index, max_index)
