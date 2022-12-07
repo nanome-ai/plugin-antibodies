@@ -1,5 +1,4 @@
 import asyncio
-import itertools
 import nanome
 import os
 import unittest
@@ -31,6 +30,7 @@ class RegionMenuTestCase(unittest.TestCase):
 
         self.pdb_file = os.path.join(fixtures_dir, '2q8b.pdb')
         self.complex = structure.Complex.io.from_pdb(path=self.pdb_file)
+        self._set_indices(self.complex)
 
     def test_build_menu(self):
         """Validate that the menu is built properly."""
@@ -45,7 +45,6 @@ class RegionMenuTestCase(unittest.TestCase):
         self.assertFalse(atoms_selected)
         for ln_chain_col in self.menu._menu.root.get_children():
             for ln_btn in ln_chain_col.get_children()[1:]:
-                breakpoint()
                 btn = ln_btn.get_children()[0].get_content()
                 self.assertFalse(btn.selected)
         heavy_chain = next(ch for ch in self.complex.chains if ch.name == 'H')
@@ -59,3 +58,46 @@ class RegionMenuTestCase(unittest.TestCase):
             for ln_btn in ln_chain_col.get_children()[1:]:
                 btn = ln_btn.get_content()
                 self.assertEqual(btn.selected, expected_selected)
+
+    def test_on_selection_changed(self):
+        # Validate that the menu is updated when a CDR is selected or deselected.
+        self.plugin.update_menu = MagicMock()
+        self.menu.build_menu(self.complex)
+        self.menu.on_selection_changed(self.complex)
+        self.plugin.update_menu.assert_called_once()
+    
+    def test_on_cdr_btn_pressed(self):
+        """Validate that the menu is updated when a CDR is selected or deselected."""
+        self.plugin._network = MagicMock()
+        self.menu.build_menu(self.complex)
+        btn = next(self.menu.chain_btn_sets).get_children()[1].get_children()[0].get_content()
+        for atom in self.complex.atoms:
+            atom.selected = False
+        self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)        
+        i = 0
+        res_set = set()
+        for atom in self.complex.atoms:
+            if i == 10:
+                break
+            res_set.add(atom.residue)
+            i += 1
+        btn.selected = True 
+        self.menu.on_cdr_btn_pressed(list(res_set), btn)
+        for res in res_set:
+            for atom in res.atoms:
+                self.assertTrue(atom.selected)
+
+    def _set_indices(self, comp):
+        """Set random indices for residues and atoms.
+
+        Prevents issues with duplicate indices.
+        """
+        min_index = 100000
+        max_index = 999999
+        comp.index = randint(min_index, max_index)
+        for chain in comp.chains:
+            chain.index = randint(min_index, max_index)
+            for residue in chain.residues:
+                residue.index = randint(min_index, max_index)
+                for atom in residue.atoms:
+                    atom.index = randint(min_index, max_index)
