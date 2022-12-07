@@ -266,13 +266,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         return list(filter(lambda res: res in cdr_residues, chain.residues))
 
     @staticmethod
-    def get_sequence_from_pdb(pdb_filepath):
-        with open(pdb_filepath) as handle:
-            sequence = next(SeqIO.parse(handle, "pdb-atom"))
-        seq = str(sequence.seq)
-        return seq
-
-    @staticmethod
     def get_sequence_from_struct(struct):
         try:
             chain_seq = ''.join([

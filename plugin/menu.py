@@ -20,19 +20,38 @@ class RegionMenu:
     def root(self):
         return self._menu.root
 
+    @property
+    def chain_btn_sets(self):
+        row_lns = self.root.get_children()
+        for row_ln in row_lns:
+            for chain_btn_set in row_ln.get_children():
+                yield chain_btn_set
+
     def build_menu(self, comp: structure.Complex):
         self._menu = ui.Menu()
-        self._menu.root.layout_orientation = enums.LayoutTypes.horizontal
+        self._menu.root.layout_orientation = enums.LayoutTypes.vertical
         self._menu.title = f"{comp.full_name} Regions "
         comp.register_selection_changed_callback(self.on_selection_changed)
+        antibody_chains = []
         for chain in comp.chains:
             seq_str = self._plugin.get_sequence_from_struct(chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
             except ChainParseError as e:
-                Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
-            self.add_menu_chain_column(self._menu, chain, abchain)
+            else:
+                antibody_chains.append((chain, abchain))
+
+        row_count = max(len(antibody_chains) // 6, 1)
+        cols_per_row = len(antibody_chains) // row_count
+
+        start_index = 0
+        for i in range(0, row_count):
+            row_ln = self._menu.root.create_child_node()
+            row_ln.layout_orientation = enums.LayoutTypes.horizontal
+            for chain, abchain in antibody_chains[start_index:start_index + cols_per_row]:
+                self.add_menu_chain_column(row_ln, chain, abchain)
+            start_index += cols_per_row
         self.update_cdr_btns(self._menu, comp)
 
     def format_region_btn(self, region_name, mesh_color, cdr_residues):
@@ -66,8 +85,8 @@ class RegionMenu:
 
         return ln_chain_btn
 
-    def add_menu_chain_column(self, menu: ui.Menu, chain: structure.Chain, abchain: AbChain):
-        ln_chain = menu.root.create_child_node()
+    def add_menu_chain_column(self, row_ln: ui.LayoutNode, chain: structure.Chain, abchain: AbChain):
+        ln_chain = row_ln.create_child_node()
         ln_chain.chain_index = chain.index
         cdr1_residues = self._plugin.get_cdr1_residues(chain)
         cdr2_residues = self._plugin.get_cdr2_residues(chain)
@@ -116,7 +135,7 @@ class RegionMenu:
 
     def update_cdr_btns(self, menu, comp):
         """Update the CDR buttons to reflect the current selections."""
-        for ln in menu.root.get_children():
+        for ln in self.chain_btn_sets:
             # Get most up to date chain selections
             chain_index = ln.chain_index
             comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
