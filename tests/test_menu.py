@@ -61,10 +61,16 @@ class RegionMenuTestCase(unittest.TestCase):
 
     def test_on_selection_changed(self):
         # Validate that the menu is updated when a CDR is selected or deselected.
-        self.plugin.update_menu = MagicMock()
+        self.plugin.update_content = MagicMock()
         self.menu.build_menu(self.complex)
+        # Assert that content is not updated, because buttons are in sync with current selection.
         self.menu.on_selection_changed(self.complex)
-        self.plugin.update_menu.assert_called_once()
+        self.plugin.update_content.assert_not_called()
+        # Select all atoms, and assert that content is updated.
+        for atom in self.complex.atoms:
+            atom.selected = True
+        self.menu.on_selection_changed(self.complex)
+        self.plugin.update_content.assert_called_once()
 
     def test_on_cdr_btn_pressed(self):
         """Validate that the menu is updated when a CDR is selected or deselected."""

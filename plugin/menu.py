@@ -20,7 +20,7 @@ class RegionMenu:
         self._menu = ui.Menu()
         self._plugin = plugin
         self.index = plugin.current_menu_index
-        self._menu.register_closed_callback(self.delete_menu)
+        self._menu.register_closed_callback(self.close_menu)
 
     @property
     def root(self):
@@ -39,10 +39,20 @@ class RegionMenu:
         self._plugin.update_menu(self._menu)
 
     def chain_btn_sets(self):
+        """Parse menu to get button sets for each chain."""
         row_lns = self.root.get_children()
         for row_ln in row_lns:
             for chain_btn_set in row_ln.get_children():
                 yield chain_btn_set
+    
+    def region_btns(self):
+        """Parse menu to get all region buttons."""
+        row_lns = self.root.get_children()
+        for row_ln in row_lns:
+            for chain_btn_set in row_ln.get_children():
+                for ln_btn in chain_btn_set.get_children():
+                    btn = ln_btn.get_children()[0].get_content()
+                    yield btn
 
     def build_menu(self, comp: structure.Complex):
         self._menu.root.layout_orientation = enums.LayoutTypes.vertical
@@ -142,11 +152,16 @@ class RegionMenu:
         self._plugin.zoom_on_structures(residue_list)
 
     def on_selection_changed(self, comp):
-        """Update the selection in the plugin."""
+        """Update the region buttons in the plugin when selection changed."""
+        btns_selected = [btn.selected for btn in self.region_btns()]
         Logs.debug(f"Selection changes for {comp.full_name}")
         self.update_cdr_btns(comp)
-        Logs.debug("Finished updating selections")
-        self._plugin.update_menu(self._menu)
+        updated_btns_selected = [btn.selected for btn in self.region_btns()]
+
+        any_changes = any([a != b for a, b in zip(btns_selected, updated_btns_selected)])
+        if any_changes:
+            Logs.message("Updating button selection on menu")
+            self._plugin.update_content(self.region_btns)
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
@@ -173,8 +188,9 @@ class RegionMenu:
             cdr3_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
 
-    def delete_menu(self, menu):
-        """Delete the menu."""
+    def close_menu(self, menu):
+        """Delete menu when closed."""
+        Logs.message(f"Closing menu {menu.index}")
         menu.enabled = False
         if menu.index in self._plugin.menus:
             del self._plugin.menus[menu.index]
