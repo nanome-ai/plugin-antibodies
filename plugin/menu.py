@@ -13,17 +13,31 @@ ASSETS_FOLDER = os.path.join(os.getcwd(), 'plugin', 'assets')
 CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
 ZOOM_ICON_PNG = os.path.join(ASSETS_FOLDER, 'ZoomIcon.png')
 
+
 class RegionMenu:
 
     def __init__(self, plugin):
         self._menu = ui.Menu()
         self._plugin = plugin
+        self.index = plugin.current_menu_index
+        self._menu.register_closed_callback(self.delete_menu)
 
     @property
     def root(self):
         return self._menu.root
 
     @property
+    def index(self):
+        return self._menu.index
+
+    @index.setter
+    def index(self, value):
+        self._menu.index = value
+
+    def enable(self):
+        self._menu.enabled = True
+        self._plugin.update_menu(self._menu)
+
     def chain_btn_sets(self):
         row_lns = self.root.get_children()
         for row_ln in row_lns:
@@ -31,7 +45,6 @@ class RegionMenu:
                 yield chain_btn_set
 
     def build_menu(self, comp: structure.Complex):
-        self._menu = ui.Menu()
         self._menu.root.layout_orientation = enums.LayoutTypes.vertical
         self._menu.title = f"{comp.full_name} Regions "
         comp.register_selection_changed_callback(self.on_selection_changed)
@@ -55,7 +68,7 @@ class RegionMenu:
             for chain, abchain in antibody_chains[start_index:start_index + cols_per_row]:
                 self.add_menu_chain_column(row_ln, chain, abchain)
             start_index += cols_per_row
-        self.update_cdr_btns(self._menu, comp)
+        self.update_cdr_btns(comp)
 
     def format_region_btn(self, region_name, mesh_color, cdr_residues):
         if not hasattr(self, '__prefab_btn'):
@@ -131,13 +144,13 @@ class RegionMenu:
     def on_selection_changed(self, comp):
         """Update the selection in the plugin."""
         Logs.debug(f"Selection changes for {comp.full_name}")
-        self.update_cdr_btns(self._menu, comp)
+        self.update_cdr_btns(comp)
         Logs.debug("Finished updating selections")
         self._plugin.update_menu(self._menu)
 
-    def update_cdr_btns(self, menu, comp):
+    def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
-        for ln in self.chain_btn_sets:
+        for ln in self.chain_btn_sets():
             # Get most up to date chain selections
             chain_index = ln.chain_index
             comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
@@ -147,7 +160,7 @@ class RegionMenu:
             seq_str = self._plugin.get_sequence_from_struct(comp_chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
+            except ChainParseError:
                 Logs.debug(f"Could not parse Chain {comp_chain.name}")
                 continue
             cdr1_residues = self._plugin.get_cdr1_residues(comp_chain, abchain=abchain)
@@ -159,3 +172,9 @@ class RegionMenu:
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr2_residues])])
             cdr3_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
+
+    def delete_menu(self, menu):
+        """Delete the menu."""
+        menu.enabled = False
+        if menu.index in self._plugin.menus:
+            del self._plugin.menus[menu.index]

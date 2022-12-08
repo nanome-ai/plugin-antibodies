@@ -56,84 +56,82 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             self.plugin.request_complex_list = MagicMock(return_value=fut)
             self.plugin.request_complexes = MagicMock(return_value=fut)
             self.plugin.update_structures_deep = MagicMock()
-            comp = await self.plugin.on_run()
-            self._validate_complex_coloring(comp)
+            comps = await self.plugin.on_run()
+            self._validate_complex_coloring(comps)
         run_awaitable(validate_on_run, self)
 
     def test_integration(self):
         """Validate that the plugin starts properly."""
         async def validate_integration(self):
             comp = self.complex
-            # fut = asyncio.Future()
-            # fut.set_result([comp])
             request = MagicMock()
             request.get_args.return_value = [comp]
             # self.plugin.update_structures_deep = MagicMock()
-            modified_comp = await self.plugin.integration_request(request)
-            self._validate_complex_coloring(modified_comp)
+            modified_comps = await self.plugin.integration_request(request)
+            self._validate_complex_coloring(modified_comps)
         run_awaitable(validate_integration, self)
 
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
         comp = self.complex
-        self._set_indices(comp)
         Antibodies.prep_antibody_complex(comp)
-        self._validate_complex_coloring(comp)
+        self._validate_complex_coloring([comp])
 
-    def _validate_complex_coloring(self, comp):
+    def _validate_complex_coloring(self, comps):
         # Get abchain to validate colors for each region.
-        for chain in comp.chains:
-            seq_str = Antibodies.get_sequence_from_struct(chain)
-            if not seq_str:
-                continue
-            try:
-                abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
-                continue
-            cdr1_residues = Antibodies.get_cdr1_residues(chain, abchain)
-            cdr2_residues = Antibodies.get_cdr2_residues(chain, abchain)
-            cdr3_residues = Antibodies.get_cdr3_residues(chain, abchain)
-            fr1_residues = Antibodies.get_fr1_residues(chain, abchain)
-            fr2_residues = Antibodies.get_fr2_residues(chain, abchain)
-            fr3_residues = Antibodies.get_fr3_residues(chain, abchain)
-            fr4_residues = Antibodies.get_fr4_residues(chain, abchain)
+        for comp in comps:
+            for chain in comp.chains:
+                seq_str = Antibodies.get_sequence_from_struct(chain)
+                if not seq_str:
+                    continue
+                try:
+                    abchain = AbChain(seq_str, scheme='imgt')
+                except ChainParseError as e:
+                    continue
+                cdr1_residues = Antibodies.get_cdr1_residues(chain, abchain)
+                cdr2_residues = Antibodies.get_cdr2_residues(chain, abchain)
+                cdr3_residues = Antibodies.get_cdr3_residues(chain, abchain)
+                fr1_residues = Antibodies.get_fr1_residues(chain, abchain)
+                fr2_residues = Antibodies.get_fr2_residues(chain, abchain)
+                fr3_residues = Antibodies.get_fr3_residues(chain, abchain)
+                fr4_residues = Antibodies.get_fr4_residues(chain, abchain)
 
-            # Assert each cdr region is colored properly.
-            if abchain.chain_type == 'H':
-                # Validate heavy chain CDRs
+                # Assert each cdr region is colored properly.
+                if abchain.chain_type == 'H':
+                    # Validate heavy chain CDRs
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr1_residues),
+                        set([IMGTCDRColorScheme.HEAVY_CDR1.value.rgb]))
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr2_residues),
+                        set([IMGTCDRColorScheme.HEAVY_CDR2.value.rgb]))
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr3_residues),
+                        set([IMGTCDRColorScheme.HEAVY_CDR3.value.rgb]))
+                else:
+                    # Validate light chain CDRs
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr1_residues),
+                        set([IMGTCDRColorScheme.LIGHT_CDR1.value.rgb]))
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr2_residues),
+                        set([IMGTCDRColorScheme.LIGHT_CDR2.value.rgb]))
+                    self.assertEqual(
+                        set(res.ribbon_color.rgb for res in cdr3_residues),
+                        set([IMGTCDRColorScheme.LIGHT_CDR3.value.rgb]))
+                # Validate Framework color matches the chain type.
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR1.value.rgb]))
+                    set(res.ribbon_color.rgb for res in fr1_residues),
+                    set([IMGTCDRColorScheme.FR.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR2.value.rgb]))
+                    set(res.ribbon_color.rgb for res in fr2_residues),
+                    set([IMGTCDRColorScheme.FR.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.HEAVY_CDR3.value.rgb]))
-            else:
-                # Validate light chain CDRs
+                    set(res.ribbon_color.rgb for res in fr3_residues),
+                    set([IMGTCDRColorScheme.FR.value.rgb]))
                 self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr1_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR1.value.rgb]))
-                self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr2_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR2.value.rgb]))
-                self.assertEqual(
-                    set(res.ribbon_color.rgb for res in cdr3_residues),
-                    set([IMGTCDRColorScheme.LIGHT_CDR3.value.rgb]))
-            # Validate Framework color matches the chain type.
-            self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr1_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
-            self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr2_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
-            self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr3_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
-            self.assertEqual(
-                set(res.ribbon_color.rgb for res in fr4_residues),
-                set([IMGTCDRColorScheme.FR.value.rgb]))
+                    set(res.ribbon_color.rgb for res in fr4_residues),
+                    set([IMGTCDRColorScheme.FR.value.rgb]))
 
     def test_validate_antibody(self):
         """Validate that antibodys and non-antibody structures are recognized."""
