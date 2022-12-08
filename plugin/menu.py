@@ -45,6 +45,7 @@ class RegionMenu:
             for chain_btn_set in row_ln.get_children():
                 yield chain_btn_set
     
+    @property
     def region_btns(self):
         """Parse menu to get all region buttons."""
         row_lns = self.root.get_children()
@@ -153,15 +154,15 @@ class RegionMenu:
 
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
-        btns_selected = [btn.selected for btn in self.region_btns()]
+        btns_selected = [btn.selected for btn in self.region_btns]
         Logs.debug(f"Selection changes for {comp.full_name}")
         self.update_cdr_btns(comp)
-        updated_btns_selected = [btn.selected for btn in self.region_btns()]
+        updated_btns_selected = [btn.selected for btn in self.region_btns]
 
         any_changes = any([a != b for a, b in zip(btns_selected, updated_btns_selected)])
         if any_changes:
             Logs.message("Updating button selection on menu")
-            self._plugin.update_content(self.region_btns)
+            self._plugin.update_content(list(self.region_btns))
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
