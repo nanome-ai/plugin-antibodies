@@ -34,9 +34,9 @@ class RegionMenuTestCase(unittest.TestCase):
 
     def test_build_menu(self):
         """Validate that the menu is built properly."""
-        self.assertEqual(len(list(self.menu.chain_btn_sets())), 0)
+        self.assertEqual(len(list(self.menu.chain_btn_sets)), 0)
         self.menu.build_menu(self.complex)
-        self.assertEqual(len(list(self.menu.chain_btn_sets())), 2)
+        self.assertEqual(len(list(self.menu.chain_btn_sets)), 2)
 
     def test_update_cdr_btns(self):
         # Validate button states change when a CDR is selected or deselected.
@@ -76,7 +76,7 @@ class RegionMenuTestCase(unittest.TestCase):
         """Validate that the menu is updated when a CDR is selected or deselected."""
         self.plugin._network = MagicMock()
         self.menu.build_menu(self.complex)
-        btn = next(self.menu.chain_btn_sets()).get_children()[1].get_children()[0].get_content()
+        btn = next(self.menu.chain_btn_sets).get_children()[1].get_children()[0].get_content()
         for atom in self.complex.atoms:
             atom.selected = False
         self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)

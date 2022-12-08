@@ -38,6 +38,7 @@ class RegionMenu:
         self._menu.enabled = True
         self._plugin.update_menu(self._menu)
 
+    @property
     def chain_btn_sets(self):
         """Parse menu to get button sets for each chain."""
         row_lns = self.root.get_children()
@@ -166,7 +167,7 @@ class RegionMenu:
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
-        for ln in self.chain_btn_sets():
+        for ln in self.chain_btn_sets:
             # Get most up to date chain selections
             chain_index = ln.chain_index
             comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
