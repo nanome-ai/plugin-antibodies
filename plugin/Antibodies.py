@@ -4,7 +4,7 @@ import time
 import nanome
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
-from Bio import SeqIO, SeqUtils
+from Bio import SeqUtils
 from concurrent.futures import ThreadPoolExecutor
 from nanome.util import async_callback, Color, Logs, enums
 
@@ -62,7 +62,6 @@ class Antibodies(nanome.AsyncPluginInstance):
     @classmethod
     def prep_antibody_complex(cls, comp):
         start_time = time.time()
-        # comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
         chains_to_color = []
