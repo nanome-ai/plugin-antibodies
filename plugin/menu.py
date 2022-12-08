@@ -9,6 +9,9 @@ from nanome.util import enums, Logs
 
 from .utils import IMGTCDRColorScheme
 
+ASSETS_FOLDER = os.path.join(os.getcwd(), 'plugin', 'assets')
+CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
+ZOOM_ICON_PNG = os.path.join(ASSETS_FOLDER, 'ZoomIcon.png')
 
 class RegionMenu:
 
@@ -46,7 +49,7 @@ class RegionMenu:
         cols_per_row = len(antibody_chains) // row_count
 
         start_index = 0
-        for i in range(0, row_count):
+        for _ in range(0, row_count):
             row_ln = self._menu.root.create_child_node()
             row_ln.layout_orientation = enums.LayoutTypes.horizontal
             for chain, abchain in antibody_chains[start_index:start_index + cols_per_row]:
@@ -71,15 +74,14 @@ class RegionMenu:
 
     def format_chain_zoom_btn(self, chain_type: str, cdr_residues: list):
         if not hasattr(self, '__prefab_chain_btn'):
-            json_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'chain_btn.json')
-            self.__prefab_chain_btn = ui.LayoutNode.io.from_json(json_path)
+            self.__prefab_chain_btn = ui.LayoutNode.io.from_json(CHAIN_BTN_JSON)
 
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
-        chain_btn_label = ln_chain_btn.get_children()[0].get_children()[0].get_content()
-        chain_btn_icon = ln_chain_btn.get_children()[0].get_children()[1].get_content()
+        chain_btn_icon = ln_chain_btn.get_children()[0].get_children()[0].get_content()
+        chain_btn_label = ln_chain_btn.get_children()[0].get_children()[1].get_content()
         chain_btn_label.text_value = chain_type
-        chain_btn_icon.file_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'ZoomIcon.png')
+        chain_btn_icon.file_path = ZOOM_ICON_PNG
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
 
