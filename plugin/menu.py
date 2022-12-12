@@ -46,7 +46,7 @@ class RegionMenu:
         for row_ln in row_lns:
             for chain_btn_set in row_ln.get_children():
                 yield chain_btn_set
-    
+
     @property
     def region_btns(self):
         """Parse menu to get all region buttons."""

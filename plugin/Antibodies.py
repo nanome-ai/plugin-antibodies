@@ -17,7 +17,7 @@ run_btn = enums.PluginListButtonType.run
 
 class Antibodies(nanome.AsyncPluginInstance):
     current_menu_index = 1  # incremented to support multiple menus
-    
+
     def start(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.integration.structure_prep = self.integration_request
@@ -53,7 +53,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             new_menu.build_menu(comp)
             self.menus[new_menu.index] = new_menu
             self.current_menu_index += 1
-        
+
         Logs.debug("Updating Structures.")
         self.set_plugin_list_button(run_btn, 'Updating..', False)
         self.update_structures_deep(comps)
