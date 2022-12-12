@@ -4,7 +4,7 @@ import time
 import nanome
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
-from Bio import SeqIO, SeqUtils
+from Bio import SeqUtils
 from concurrent.futures import ThreadPoolExecutor
 from nanome.util import async_callback, Color, Logs, enums
 
@@ -16,53 +16,70 @@ run_btn = enums.PluginListButtonType.run
 
 
 class Antibodies(nanome.AsyncPluginInstance):
+    current_menu_index = 1  # incremented to support multiple menus
 
     def start(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.menu = RegionMenu(self)
         self.integration.structure_prep = self.integration_request
+        self.menus = {}
 
     def on_stop(self):
         self.temp_dir.cleanup()
 
     @async_callback
     async def on_run(self):
+        start_time = time.time()
         # Get selected antibody complex
-        Logs.debug("Loading Complex")
-        self.set_plugin_list_button(run_btn, 'Loading Complex', False)
+        Logs.debug("Loading Complexes")
+        self.set_plugin_list_button(run_btn, 'Loading...', False)
         comp_list = await self.request_complex_list()
-        shallow_comp = next((cmp for cmp in comp_list if cmp.get_selected()), None)
-        if not shallow_comp:
+        shallow_comps = (cmp for cmp in comp_list if cmp.get_selected())
+        if not shallow_comps:
             self.send_notification(enums.NotificationTypes.error, "Please select an antibody")
             self._reset_run_btn()
             return
-        comp = (await self.request_complexes([shallow_comp.index]))[0]
-        if not self.validate_antibody(comp):
-            self.send_notification(enums.NotificationTypes.error, "Selected complex is not an antibody")
-            return
-        self.set_plugin_list_button(run_btn, 'Finding CDR Loops...', False)
-        self.prep_antibody_complex(comp)
+        comps = (await self.request_complexes([cmp.index for cmp in shallow_comps]))
+        for i, comp in enumerate(comps):
+            counter_str = f'({i + 1}/{len(comps)}) ' if len(comps) > 1 else ''
+            self.set_plugin_list_button(run_btn, f'{counter_str}Coloring...', False)
+            if not self.validate_antibody(comp):
+                self.send_notification(enums.NotificationTypes.warning, f"{comp.full_name} is not an antibody")
+                continue
+
+            self.prep_antibody_complex(comp)
+            # self.set_plugin_list_button(run_btn, f'{counter_str}Building menu...', False)
+            Logs.debug("Building Menu...")
+            new_menu = RegionMenu(self)
+            new_menu.build_menu(comp)
+            self.menus[new_menu.index] = new_menu
+            self.current_menu_index += 1
+
         Logs.debug("Updating Structures.")
-        self.update_structures_deep([comp])
-        self.set_plugin_list_button(run_btn, 'Building menu...', True)
-        self.menu.build_menu(comp)
-        self.menu._menu.enabled = True
-        self.update_menu(self.menu._menu)
+        self.set_plugin_list_button(run_btn, 'Updating..', False)
+        self.update_structures_deep(comps)
+        for menu in self.menus.values():
+            menu.enable()
         self._reset_run_btn()
-        return comp
+        end_time = time.time()
+        elapsed_time = round(end_time - start_time, 2)
+        log_extra = {
+            'elapsed_time': elapsed_time,
+            'complex_count': len(comps),
+            'residue_count': sum([len(list(comp.residues)) for comp in comps])}
+        Logs.message(f"Complexes updated in {elapsed_time} seconds", extra=log_extra)
+        return comps
 
     @async_callback
     async def integration_request(self, request):
+        # TODO Reactivate when we better handle swappable structure prep plugins.
         complexes = request.get_args()
-        comp = complexes[0]
-        self.prep_antibody_complex(comp)
-        request.send_response([comp])
-        return comp
+        for comp in complexes:
+            self.prep_antibody_complex(comp)
+        request.send_response(complexes)
+        return complexes
 
     @classmethod
     def prep_antibody_complex(cls, comp):
-        start_time = time.time()
-        # comp.set_all_selected(False)
         # Loop through chain and color cdr loops
         Logs.debug("Processing Chains.")
         chains_to_color = []
@@ -83,11 +100,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         with ThreadPoolExecutor(max_workers=len(chains_to_color)) as executor:
             for ch, abch in chains_to_color:
                 executor.submit(cls.format_chain, ch, abch)
-        # Log data about run
-        end_time = time.time()
-        elapsed_time = round(end_time - start_time, 2)
-        log_extra = {'elapsed_time': elapsed_time, 'residue_count': len(list(comp.residues))}
-        Logs.message(f"Complex prepped in {elapsed_time} seconds", extra=log_extra)
 
     @classmethod
     def format_chain(cls, chain, abchain):
@@ -281,7 +293,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
 
 def main():
-    name = 'Antibodies'
+    name = 'Antibody Representation'
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
     plugin = nanome.Plugin(
         name, description, 'other', False,
