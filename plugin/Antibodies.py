@@ -71,6 +71,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @async_callback
     async def integration_request(self, request):
+        # TODO Reactivate when we better handle swappable structure prep plugins.
         complexes = request.get_args()
         for comp in complexes:
             self.prep_antibody_complex(comp)
@@ -292,7 +293,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
 
 def main():
-    name = 'Antibodies'
+    name = 'Antibody Representation'
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
     plugin = nanome.Plugin(
         name, description, 'other', False,
