@@ -21,6 +21,7 @@ class RegionMenu:
         self._plugin = plugin
         self.index = plugin.current_menu_index
         self._menu.register_closed_callback(self.close_menu)
+        self._menu.root.set_padding(0.01, 0.01, 0.01, 0.01)
 
     @property
     def root(self):
@@ -103,10 +104,9 @@ class RegionMenu:
 
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
-        chain_btn_icon = ln_chain_btn.get_children()[0].get_children()[0].get_content()
-        chain_btn_label = ln_chain_btn.get_children()[0].get_children()[1].get_content()
-        chain_btn_label.text_value = chain_type
-        chain_btn_icon.file_path = ZOOM_ICON_PNG
+        chain_btn.text.value.set_all(chain_type)
+        # chain_btn.icon.file_path = ZOOM_ICON_PNG
+        chain_btn.icon.value.set_all(ZOOM_ICON_PNG)
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
 

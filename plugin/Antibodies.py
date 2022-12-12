@@ -55,7 +55,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             self.current_menu_index += 1
         
         Logs.debug("Updating Structures.")
-        self.set_plugin_list_button(run_btn, 'Updating...', False)
+        self.set_plugin_list_button(run_btn, 'Updating..', False)
         self.update_structures_deep(comps)
         for menu in self.menus.values():
             menu.enable()
