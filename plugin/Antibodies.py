@@ -40,13 +40,13 @@ class Antibodies(nanome.AsyncPluginInstance):
             return
         comps = (await self.request_complexes([cmp.index for cmp in shallow_comps]))
         for i, comp in enumerate(comps):
-            counter_str = f'({i + 1}/{len(comps)}) ' if len(comps) > 1 else ''
-            self.set_plugin_list_button(run_btn, f'{counter_str}Coloring...', False)
-            if not self.validate_antibody(comp):
-                self.send_notification(enums.NotificationTypes.warning, f"{comp.full_name} is not an antibody")
-                continue
+            # counter_str = f'({i + 1}/{len(comps)}) ' if len(comps) > 1 else ''
+            # self.set_plugin_list_button(run_btn, f'{counter_str}Coloring...', False)
+            # if not self.validate_antibody(comp):
+            #     self.send_notification(enums.NotificationTypes.warning, f"{comp.full_name} is not an antibody")
+            #     continue
 
-            self.prep_antibody_complex(comp)
+            # self.prep_antibody_complex(comp)
             # self.set_plugin_list_button(run_btn, f'{counter_str}Building menu...', False)
             Logs.debug("Building Menu...")
             new_menu = RegionMenu(self)
