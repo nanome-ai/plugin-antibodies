@@ -170,7 +170,10 @@ class RegionMenu:
         for ln in self.chain_btn_sets:
             # Get most up to date chain selections
             chain_index = ln.chain_index
-            comp_chain = next(ch for ch in comp.chains if ch.index == chain_index)
+            comp_chain = next((ch for ch in comp.chains if ch.index == chain_index), None)
+            if not comp_chain:
+                # Chain was probably deleted. Skip it.
+                continue
             cdr1_btn = ln.get_children()[1].get_children()[0].get_content()
             cdr2_btn = ln.get_children()[2].get_children()[0].get_content()
             cdr3_btn = ln.get_children()[3].get_children()[0].get_content()
