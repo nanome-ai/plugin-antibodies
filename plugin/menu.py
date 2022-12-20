@@ -101,9 +101,10 @@ class RegionMenu:
     def format_chain_zoom_btn(self, chain_type: str, cdr_residues: list):
         if not hasattr(self, '__prefab_chain_btn'):
             self.__prefab_chain_btn = ui.LayoutNode.io.from_json(CHAIN_BTN_JSON)
-
+        
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
+        chain_btn.toggle_on_press = True
         chain_btn.text.value.set_all(chain_type)
         # chain_btn.icon.file_path = ZOOM_ICON_PNG
         chain_btn.icon.value.set_all(ZOOM_ICON_PNG)
@@ -151,7 +152,9 @@ class RegionMenu:
         self._plugin.update_structures_deep(residue_list)
 
     def on_chain_btn_pressed(self, residue_list, btn):
-        self._plugin.zoom_on_structures(residue_list)
+        for atom in itertools.chain(*[res.atoms for res in residue_list]):
+            atom.selected = btn.selected
+        self._plugin.update_structures_deep(residue_list)
 
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""

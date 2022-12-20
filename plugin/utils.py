@@ -6,7 +6,7 @@ from scipy.spatial import KDTree
 from nanome.util import Color
 
 
-__all__ = ['IMGTCDRColorScheme', 'extract_residues', 'merge_complexes']
+__all__ = ['IMGTCDRColorScheme', 'get_neighboring_atoms']
 
 
 class IMGTCDRColorScheme(Enum):
