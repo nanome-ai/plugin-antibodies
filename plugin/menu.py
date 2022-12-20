@@ -153,7 +153,7 @@ class RegionMenu:
         self._plugin.update_structures_deep(residue_list)
 
     def on_chain_btn_pressed(self, cdr_btns, chain_btn):
-        chain_type = chain_btn.text.value.active
+        chain_type = chain_btn.text.value.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
         for btn in cdr_btns:
             btn.selected = chain_btn.selected
