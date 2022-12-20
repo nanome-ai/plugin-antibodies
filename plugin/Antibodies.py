@@ -104,7 +104,6 @@ class Antibodies(nanome.AsyncPluginInstance):
     @classmethod
     def format_chain(cls, chain, abchain):
         """Color CDR loops and add labels."""
-        # Make entire complex Grey.
         try:
             cdr1_residues = cls.get_cdr1_residues(chain)
             cdr2_residues = cls.get_cdr2_residues(chain)

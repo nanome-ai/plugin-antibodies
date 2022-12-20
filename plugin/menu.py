@@ -157,14 +157,23 @@ class RegionMenu:
     def on_chain_btn_pressed(self, cdr_btns, chain_btn):
         chain_type = chain_btn.text.value.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
+        cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
+        comp = next(cdr_residues).complex
+        callback_partial = functools.partial(self.change_chain_selection, cdr_btns, chain_btn)
+        self._plugin.request_complexes([comp.index], callback_partial)
+
+    def change_chain_selection(self, cdr_btns, chain_btn, comp_list):
+        Logs.debug("Callback hit")
+        comp = comp_list[0]
+        cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
+        chain = next(iter(set([res.chain for res in cdr_residues])))
+        updated_chain = next(ch for ch in comp.chains if ch.index == chain.index)
+        for atom in updated_chain.atoms:
+            atom.selected = chain_btn.selected
         for btn in cdr_btns:
             btn.selected = chain_btn.selected
-            for atom in itertools.chain(*[res.atoms for res in btn.cdr_residues]):
-                atom.selected = btn.selected
-        cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
-        self._plugin.update_structures_deep(cdr_residues)
-        self._plugin.update_content(chain_btn)
-        self._plugin.update_content(cdr_btns)
+        self._plugin.update_structures_deep([updated_chain])
+        self._plugin.update_content(chain_btn, *cdr_btns)
 
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
