@@ -110,7 +110,6 @@ class RegionMenu:
         chain_btn.icon.value.set_all(ZOOM_ICON_PNG)
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, cdr_residues))
-
         return ln_chain_btn
 
     def add_menu_chain_column(self, row_ln: ui.LayoutNode, chain: structure.Chain, abchain: AbChain):
