@@ -106,6 +106,8 @@ class RegionMenu:
         chain_btn = ln_chain_btn.get_children()[0].get_content()
         chain_btn.toggle_on_press = True
         chain_btn.text.value.set_all(chain_type)
+        chain_btn.text.value.unusable = f"{chain_type}..."
+        chain_btn.disable_on_press = True
         chain_btn.icon.value.set_all(ZOOM_ICON_PNG)
         return ln_chain_btn
 
@@ -161,6 +163,7 @@ class RegionMenu:
                 atom.selected = btn.selected
         cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
         self._plugin.update_structures_deep(cdr_residues)
+        self._plugin.update_content(chain_btn)
         self._plugin.update_content(cdr_btns)
 
     def on_selection_changed(self, comp):
