@@ -112,7 +112,7 @@ class RegionMenu:
         chain_btn.chain_index = chain_index
         chain_btn.chain_type = chain_type
         chain_btn.toggle_on_press = True
-        btn_text = f"Chain {chain.name} ({chain_type})"
+        btn_text = chain_type
         chain_btn.text.value.set_all(btn_text)
         chain_btn.text.value.unusable = f"{btn_text}..."
         chain_btn.disable_on_press = True
