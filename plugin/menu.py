@@ -11,7 +11,6 @@ from .utils import IMGTCDRColorScheme
 
 ASSETS_FOLDER = os.path.join(os.getcwd(), 'plugin', 'assets')
 CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
-ZOOM_ICON_PNG = os.path.join(ASSETS_FOLDER, 'ZoomIcon.png')
 CHECKMARK_PNG = os.path.join(ASSETS_FOLDER, 'checkmark.png')
 
 
