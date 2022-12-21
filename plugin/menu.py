@@ -105,7 +105,7 @@ class RegionMenu:
     def format_chain_btn(self, chain: structure.Chain, chain_type: str):
         if not hasattr(self, '__prefab_chain_btn'):
             self.__prefab_chain_btn = ui.LayoutNode.io.from_json(CHAIN_BTN_JSON)
-        
+
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
         chain_index = chain.index
@@ -163,7 +163,7 @@ class RegionMenu:
         self._plugin.update_content(cdr_btn)
         [updated_comp] = await self._plugin.request_complexes([comp.index])
         updated_chain = next(ch for ch in updated_comp.chains if ch.index == chain.index)
-        
+
         res_indices = [res.index for res in residue_list]
         reses_to_update = set()
         for atom in updated_chain.atoms:
@@ -185,7 +185,7 @@ class RegionMenu:
         updated_chain = next(ch for ch in comp.chains if ch.index == chain_btn.chain_index)
         for atom in updated_chain.atoms:
             atom.selected = chain_btn.selected
-        
+
         btns_to_update = []
         for btn in self.region_btns:
             if not hasattr(btn, 'cdr_residues') or btn.cdr_residues[0].chain.index != chain_btn.chain_index:
