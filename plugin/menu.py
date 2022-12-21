@@ -5,7 +5,7 @@ import os
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from nanome.api import ui, structure
-from nanome.util import enums, Logs, Color
+from nanome.util import enums, Logs, Color, async_callback
 
 from .utils import IMGTCDRColorScheme
 
@@ -84,7 +84,7 @@ class RegionMenu:
             start_index += cols_per_row
         self.update_cdr_btns(comp)
 
-    def format_region_btn(self, region_name, mesh_color, cdr_residues):
+    def format_cdr_btn(self, region_name, mesh_color, cdr_residues):
         if not hasattr(self, '__prefab_btn'):
             json_path = os.path.join(os.getcwd(), 'plugin', 'assets', 'region_btn.json')
             self.__prefab_btn = ui.LayoutNode.io.from_json(json_path)
@@ -92,6 +92,8 @@ class RegionMenu:
         cdr_btn = ln_cdr.get_children()[0].get_content()
         cdr_btn.icon.value.set_all(CHECKMARK_PNG)
         cdr_btn.text.value.set_all(region_name)
+        cdr_btn.text.value.unusable = f"{region_name}..."
+        cdr_btn.disable_on_press = True
         cdr_btn.icon.color.set_all(Color.White())
         cdr_mesh = ln_cdr.get_children()[0].get_children()[0].get_content()
         cdr_mesh.mesh_color = mesh_color
@@ -140,24 +142,36 @@ class RegionMenu:
             cdr3_color = IMGTCDRColorScheme.LIGHT_CDR3.value
 
         cdr1_region_name = f"CDR{abchain.chain_type}1"
-        ln_cdr1 = self.format_region_btn(cdr1_region_name, cdr1_color, cdr1_residues)
+        ln_cdr1 = self.format_cdr_btn(cdr1_region_name, cdr1_color, cdr1_residues)
         ln_chain.add_child(ln_cdr1)
 
         cdr2_region_name = f"CDR{abchain.chain_type}2"
-        ln_cdr2 = self.format_region_btn(cdr2_region_name, cdr2_color, cdr2_residues)
+        ln_cdr2 = self.format_cdr_btn(cdr2_region_name, cdr2_color, cdr2_residues)
         ln_chain.add_child(ln_cdr2)
 
         cdr3_region_name = f"CDR{abchain.chain_type}3"
-        ln_cdr3 = self.format_region_btn(cdr3_region_name, cdr3_color, cdr3_residues)
+        ln_cdr3 = self.format_cdr_btn(cdr3_region_name, cdr3_color, cdr3_residues)
         ln_chain.add_child(ln_cdr3)
 
-    def on_cdr_btn_pressed(self, residue_list, btn):
+    @async_callback
+    async def on_cdr_btn_pressed(self, residue_list, cdr_btn):
         """When cdr button pressed, select all atoms in the residue_list."""
-        for atom in itertools.chain(*[res.atoms for res in residue_list]):
-            atom.selected = btn.selected
-        btn.icon.active = btn.selected
-        self._plugin.update_structures_deep(residue_list)
-        self._plugin.update_content(btn)
+        cdr_name = cdr_btn.text.value.selected
+        Logs.message(f"CDR button {cdr_name} {'Selected' if cdr_btn.selected else 'Deselected'}")
+        comp = residue_list[0].complex
+        chain = residue_list[0].chain
+        cdr_btn.icon.active = cdr_btn.selected
+        self._plugin.update_content(cdr_btn)
+        [updated_comp] = await self._plugin.request_complexes([comp.index])
+        updated_chain = next(ch for ch in updated_comp.chains if ch.index == chain.index)
+        
+        res_indices = [res.index for res in residue_list]
+        reses_to_update = set()
+        for atom in updated_chain.atoms:
+            if atom.residue.index in res_indices:
+                atom.selected = cdr_btn.selected
+                reses_to_update.add(atom.residue)
+        self._plugin.update_structures_deep(reses_to_update)
 
     def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
