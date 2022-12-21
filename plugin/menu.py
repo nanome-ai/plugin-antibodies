@@ -101,17 +101,23 @@ class RegionMenu:
             functools.partial(self.on_cdr_btn_pressed, cdr_residues))
         return ln_cdr
 
-    def format_chain_btn(self, chain_type: str):
+    def format_chain_btn(self, chain: structure.Chain, chain_type: str):
         if not hasattr(self, '__prefab_chain_btn'):
             self.__prefab_chain_btn = ui.LayoutNode.io.from_json(CHAIN_BTN_JSON)
         
         ln_chain_btn = self.__prefab_chain_btn.clone()
         chain_btn = ln_chain_btn.get_children()[0].get_content()
+        chain_index = chain.index
+        chain_btn.chain_index = chain_index
+        chain_btn.chain_type = chain_type
         chain_btn.toggle_on_press = True
-        chain_btn.text.value.set_all(chain_type)
-        chain_btn.text.value.unusable = f"{chain_type}..."
+        btn_text = f"Chain {chain.name} ({chain_type})"
+        chain_btn.text.value.set_all(btn_text)
+        chain_btn.text.value.unusable = f"{btn_text}..."
         chain_btn.disable_on_press = True
-        chain_btn.icon.value.set_all(ZOOM_ICON_PNG)
+        chain_btn.register_pressed_callback(
+            functools.partial(self.on_chain_btn_pressed, chain))
+
         return ln_chain_btn
 
     def add_menu_chain_column(self, row_ln: ui.LayoutNode, chain: structure.Chain, abchain: AbChain):
@@ -120,7 +126,7 @@ class RegionMenu:
         cdr1_residues = self._plugin.get_cdr1_residues(chain)
         cdr2_residues = self._plugin.get_cdr2_residues(chain)
         cdr3_residues = self._plugin.get_cdr3_residues(chain)
-        ln_chain_btn = self.format_chain_btn(abchain.chain_type)
+        ln_chain_btn = self.format_chain_btn(chain, abchain.chain_type)
         ln_chain.add_child(ln_chain_btn)
 
         chain_type = abchain.chain_type
@@ -144,12 +150,6 @@ class RegionMenu:
         cdr3_region_name = f"CDR{abchain.chain_type}3"
         ln_cdr3 = self.format_region_btn(cdr3_region_name, cdr3_color, cdr3_residues)
         ln_chain.add_child(ln_cdr3)
-        
-        # Format chain button, and pass the other buttons to it
-        cdr_btns = [ln_cdr.get_children()[0].get_content() for ln_cdr in [ln_cdr1, ln_cdr2, ln_cdr3]]
-        chain_btn = ln_chain_btn.get_children()[0].get_content()
-        chain_btn.register_pressed_callback(
-            functools.partial(self.on_chain_btn_pressed, cdr_btns))
 
     def on_cdr_btn_pressed(self, residue_list, btn):
         """When cdr button pressed, select all atoms in the residue_list."""
@@ -159,27 +159,30 @@ class RegionMenu:
         self._plugin.update_structures_deep(residue_list)
         self._plugin.update_content(btn)
 
-    def on_chain_btn_pressed(self, cdr_btns, chain_btn):
-        chain_type = chain_btn.text.value.selected
+    def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
+        chain_type = chain_btn.chain_type
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
-        cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
-        comp = next(cdr_residues).complex
-        callback_partial = functools.partial(self.change_chain_selection, cdr_btns, chain_btn)
+        comp = chain.complex
+        callback_partial = functools.partial(self.change_chain_selection, chain_btn)
         self._plugin.request_complexes([comp.index], callback_partial)
 
-    def change_chain_selection(self, cdr_btns, chain_btn, comp_list):
+    def change_chain_selection(self, chain_btn: ui.Button, comp_list):
         Logs.debug("Callback hit")
         comp = comp_list[0]
-        cdr_residues = itertools.chain(*[btn.cdr_residues for btn in cdr_btns])
-        chain = next(iter(set([res.chain for res in cdr_residues])))
-        updated_chain = next(ch for ch in comp.chains if ch.index == chain.index)
+        updated_chain = next(ch for ch in comp.chains if ch.index == chain_btn.chain_index)
         for atom in updated_chain.atoms:
             atom.selected = chain_btn.selected
-        for btn in cdr_btns:
+        
+        btns_to_update = []
+        for btn in self.region_btns:
+            if not hasattr(btn, 'cdr_residues') or btn.cdr_residues[0].chain.index != chain_btn.chain_index:
+                continue
             btn.selected = chain_btn.selected
             btn.icon.active = chain_btn.selected
+            btns_to_update.append(btn)
+
         self._plugin.update_structures_deep([updated_chain])
-        self._plugin.update_content(chain_btn, *cdr_btns)
+        self._plugin.update_content(chain_btn, *btns_to_update)
 
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
