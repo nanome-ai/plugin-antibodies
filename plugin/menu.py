@@ -5,13 +5,14 @@ import os
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
 from nanome.api import ui, structure
-from nanome.util import enums, Logs
+from nanome.util import enums, Logs, Color
 
 from .utils import IMGTCDRColorScheme
 
 ASSETS_FOLDER = os.path.join(os.getcwd(), 'plugin', 'assets')
 CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
 ZOOM_ICON_PNG = os.path.join(ASSETS_FOLDER, 'ZoomIcon.png')
+CHECKMARK_PNG = os.path.join(ASSETS_FOLDER, 'checkmark.png')
 
 
 class RegionMenu:
@@ -89,7 +90,9 @@ class RegionMenu:
             self.__prefab_btn = ui.LayoutNode.io.from_json(json_path)
         ln_cdr = self.__prefab_btn.clone()
         cdr_btn = ln_cdr.get_children()[0].get_content()
+        cdr_btn.icon.value.set_all(CHECKMARK_PNG)
         cdr_btn.text.value.set_all(region_name)
+        cdr_btn.icon.color.set_all(Color.White())
         cdr_mesh = ln_cdr.get_children()[0].get_children()[0].get_content()
         cdr_mesh.mesh_color = mesh_color
         cdr_btn.toggle_on_press = True
@@ -152,7 +155,9 @@ class RegionMenu:
         """When cdr button pressed, select all atoms in the residue_list."""
         for atom in itertools.chain(*[res.atoms for res in residue_list]):
             atom.selected = btn.selected
+        btn.icon.active = btn.selected
         self._plugin.update_structures_deep(residue_list)
+        self._plugin.update_content(btn)
 
     def on_chain_btn_pressed(self, cdr_btns, chain_btn):
         chain_type = chain_btn.text.value.selected
@@ -172,13 +177,14 @@ class RegionMenu:
             atom.selected = chain_btn.selected
         for btn in cdr_btns:
             btn.selected = chain_btn.selected
+            btn.icon.active = chain_btn.selected
         self._plugin.update_structures_deep([updated_chain])
         self._plugin.update_content(chain_btn, *cdr_btns)
 
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
         btns_selected = [btn.selected for btn in self.region_btns]
-        Logs.debug(f"Selection changes for {comp.full_name}")
+        Logs.debug(f"Selection changes on complex")
         self.update_cdr_btns(comp)
         updated_btns_selected = [btn.selected for btn in self.region_btns]
 
@@ -214,6 +220,9 @@ class RegionMenu:
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr2_residues])])
             cdr3_btn.selected = any([
                 atom.selected for atom in itertools.chain(*[res.atoms for res in cdr3_residues])])
+            cdr1_btn.icon.active = cdr1_btn.selected
+            cdr2_btn.icon.active = cdr2_btn.selected
+            cdr3_btn.icon.active = cdr3_btn.selected
 
     def close_menu(self, menu):
         """Delete menu when closed."""
