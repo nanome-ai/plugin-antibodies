@@ -172,15 +172,12 @@ class RegionMenu:
                 reses_to_update.add(atom.residue)
         self._plugin.update_structures_deep(reses_to_update)
 
-    def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
+    @async_callback
+    async def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
         comp = chain.complex
-        callback_partial = functools.partial(self.change_chain_selection, chain_btn)
-        self._plugin.request_complexes([comp.index], callback_partial)
-
-    def change_chain_selection(self, chain_btn: ui.Button, comp_list):
-        Logs.debug("Callback hit")
+        comp_list = await self._plugin.request_complexes([comp.index])
         comp = comp_list[0]
         updated_chain = next(ch for ch in comp.chains if ch.index == chain_btn.chain_index)
         for atom in updated_chain.atoms:
