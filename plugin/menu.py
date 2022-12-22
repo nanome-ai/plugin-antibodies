@@ -112,13 +112,14 @@ class RegionMenu:
         chain_btn.chain_index = chain_index
         chain_btn.chain_type = chain_type
         chain_btn.toggle_on_press = True
+        chain_btn.icon.value.set_all(CHECKMARK_PNG)
         btn_text = chain_type
         chain_btn.text.value.set_all(btn_text)
         chain_btn.text.value.unusable = f"{btn_text}..."
         chain_btn.disable_on_press = True
         chain_btn.register_pressed_callback(
             functools.partial(self.on_chain_btn_pressed, chain))
-
+        chain_btn.selected = all([atom.selected for atom in chain.atoms])
         return ln_chain_btn
 
     def add_menu_chain_column(self, row_ln: ui.LayoutNode, chain: structure.Chain, abchain: AbChain):
@@ -175,6 +176,7 @@ class RegionMenu:
     @async_callback
     async def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
+        chain_btn.icon.active = chain_btn.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
         comp = chain.complex
         comp_list = await self._plugin.request_complexes([comp.index])
@@ -200,8 +202,14 @@ class RegionMenu:
         Logs.debug(f"Selection changes on complex")
         self.update_cdr_btns(comp)
         updated_btns = [btn for btn in self.region_btns]
-
         changed_btns = [b for a, b in zip(btns_selected, updated_btns) if a != b.selected]
+
+        # for btn in self.region_btns:
+        #     if hasattr(btn, 'chain_index'):
+        #         chain = next((ch for ch in comp.chains if ch.index == btn.chain_index), None)
+        #         btn.selected = all([atom.selected for atom in chain.atoms])
+        #         btn.icon.active = btn.selected
+        #         self._plugin.update_content(btn)
         if changed_btns:
             changed_btn_names = [btn.text.value.selected for btn in changed_btns]
             Logs.message(f"Updating {', '.join(changed_btn_names)} buttons")
