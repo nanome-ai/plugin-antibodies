@@ -49,13 +49,26 @@ class RegionMenu:
 
     @property
     def region_btns(self):
-        """Parse menu to get all region buttons."""
+        """Parse menu to get all region buttons (chain/cdrs)."""
         row_lns = self.root.get_children()
         for row_ln in row_lns:
             for chain_btn_set in row_ln.get_children():
                 for ln_btn in chain_btn_set.get_children():
                     btn = ln_btn.get_children()[0].get_content()
                     yield btn
+    
+    @property
+    def chain_btns(self):
+        """Parse menu to get all chain buttons."""
+        row_lns = self.root.get_children()
+        for row_ln in row_lns:
+            for region_btn_set in row_ln.get_children():
+                # Chain button is always first child of region button set
+                chain_ln_btn = region_btn_set.get_children()[0]
+                btn = chain_ln_btn.get_children()[0].get_content()
+                assert isinstance(btn, ui.Button)
+                assert hasattr(btn, 'chain_type')
+                yield btn
 
     def build_menu(self, comp: structure.Complex):
         self._menu.root.layout_orientation = enums.LayoutTypes.vertical
@@ -176,19 +189,23 @@ class RegionMenu:
         self._plugin.update_structures_deep([chain])
         self._plugin.update_content(chain_btn)
 
-
-
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
         btns_selected = [btn.selected for btn in self.region_btns]
         Logs.debug(f"Selection changes on complex")
         self.update_cdr_btns(comp)
+        # Update chain buttons
+        for chain_btn in self.chain_btns:
+            chain_index = chain_btn.chain_index
+            chain = next((ch for ch in comp.chains if ch.index == chain_index))
+            chain_btn.selected = all([atom.selected for atom in chain.atoms])
+            chain_btn.icon.active = chain_btn.selected
         updated_btns = [btn for btn in self.region_btns]
         changed_btns = [b for a, b in zip(btns_selected, updated_btns) if a != b.selected]
 
         if changed_btns:
             changed_btn_names = [btn.text.value.selected for btn in changed_btns]
-            Logs.message(f"Updating {', '.join(changed_btn_names)} buttons")
+            Logs.debug(f"Updating {', '.join(changed_btn_names)} buttons")
             self._plugin.update_content(changed_btns)
 
     def update_cdr_btns(self, comp):
