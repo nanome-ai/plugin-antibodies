@@ -202,12 +202,13 @@ class RegionMenu:
         btns_selected = [btn.selected for btn in self.region_btns]
         Logs.debug(f"Selection changes on complex")
         self.update_cdr_btns(comp)
-        updated_btns_selected = [btn.selected for btn in self.region_btns]
+        updated_btns = [btn for btn in self.region_btns]
 
-        any_changes = any([a != b for a, b in zip(btns_selected, updated_btns_selected)])
-        if any_changes:
-            Logs.message("Updating button selection on menu")
-            self._plugin.update_content(list(self.region_btns))
+        changed_btns = [b for a, b in zip(btns_selected, updated_btns) if a != b.selected]
+        if changed_btns:
+            changed_btn_names = [btn.text.value.selected for btn in changed_btns]
+            Logs.message(f"Updating {', '.join(changed_btn_names)} buttons")
+            self._plugin.update_content(changed_btns)
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
