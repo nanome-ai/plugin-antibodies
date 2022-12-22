@@ -1,11 +1,14 @@
 # Nanome - Antibodies
 
-Visualize and build antibody proteins.
+Visualize and build antibody proteins with Nanome.
 
-When run, any selected antibody in the workspace will be colored according to IMGT CDR Color Menu
-(https://www.imgt.org/IMGTScientificChart/RepresentationRules/colormenu.php#h1_26)
 
-The plugin also opens a menu which provides easy selection of specific cdr loops and chains.
+![antibody_image](antibody_img.png)
+
+When run, any selected antibody in the workspace will be colored according to the IMGT CDR Color Menu
+https://www.imgt.org/IMGTScientificChart/RepresentationRules/colormenu.php#h1_26
+
+The plugin also opens a menu which provides easy selection of cdr loops and chains.
 
 ## Usage
 
