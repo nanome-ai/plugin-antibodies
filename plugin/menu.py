@@ -167,8 +167,7 @@ class RegionMenu:
         ln_cdr3 = self.format_cdr_btn(cdr3_region_name, cdr3_color, cdr3_residues)
         ln_chain.add_child(ln_cdr3)
 
-    @async_callback
-    async def on_cdr_btn_pressed(self, residue_list, cdr_btn):
+    def on_cdr_btn_pressed(self, residue_list, cdr_btn):
         """When cdr button pressed, select all atoms in the residue_list."""
         cdr_name = cdr_btn.text.value.selected
         Logs.message(f"CDR button {cdr_name} {'Selected' if cdr_btn.selected else 'Deselected'}")
@@ -179,8 +178,7 @@ class RegionMenu:
         self._plugin.update_content(cdr_btn)
         self._plugin.update_structures_deep(residue_list)
 
-    @async_callback
-    async def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
+    def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
         chain_btn.icon.active = chain_btn.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
