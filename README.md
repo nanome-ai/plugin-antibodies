@@ -1,14 +1,11 @@
 # Nanome - Antibodies
 
-Visualize and build antibody proteins
+Visualize and build antibody proteins.
 
-## Dependencies
+When run, any selected antibody in the workspace will be colored according to IMGT CDR Color Menu
+(https://www.imgt.org/IMGTScientificChart/RepresentationRules/colormenu.php#h1_26)
 
-[Docker](https://docs.docker.com/get-docker/)
-
-**TODO**: Provide instructions on how to install and link any external dependencies for this plugin.
-
-**TODO**: Update docker/Dockerfile to install any necessary dependencies.
+The plugin also opens a menu which provides easy selection of specific cdr loops and chains.
 
 ## Usage
 
