@@ -5,6 +5,6 @@ dependencies:
   - abnumber
   - pip
   - pip:
-      - nanome==0.38.8
+      - nanome==0.38.10
       - biopython
       - scipy==1.7.3
