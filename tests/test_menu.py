@@ -25,7 +25,7 @@ class RegionMenuTestCase(unittest.TestCase):
     def setUp(self):
         self.plugin = Antibodies()
         PluginInstance._instance = self.plugin
-        nanome._internal._network._plugin_network.PluginNetwork._instance = MagicMock()
+        nanome._internal.network.plugin_network.PluginNetwork._instance = MagicMock()
         self.menu = RegionMenu(self.plugin)
 
         self.pdb_file = os.path.join(fixtures_dir, '2q8b.pdb')

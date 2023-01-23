@@ -1,5 +1,4 @@
 import asyncio
-import itertools
 import nanome
 import os
 import unittest
@@ -28,7 +27,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
     def setUp(self):
         self.plugin = Antibodies()
         PluginInstance._instance = self.plugin
-        nanome._internal._network._plugin_network.PluginNetwork._instance = MagicMock()
+        nanome._internal.network.plugin_network.PluginNetwork._instance = MagicMock()
 
         # Mock args that are passed to setup plugin instance networking
         session_id = plugin_network = pm_queue_in = pm_queue_out = custom_data = \
