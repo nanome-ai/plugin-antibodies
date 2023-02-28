@@ -195,7 +195,9 @@ class RegionMenu:
         # Update chain buttons
         for chain_btn in self.chain_btns:
             chain_index = chain_btn.chain_index
-            chain = next((ch for ch in comp.chains if ch.index == chain_index))
+            chain = next((ch for ch in comp.chains if ch.index == chain_index), None)
+            if not chain:
+                continue
             chain_btn.selected = all([atom.selected for atom in chain.atoms])
             chain_btn.icon.active = chain_btn.selected
         updated_btns = [btn for btn in self.region_btns]
