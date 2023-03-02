@@ -74,29 +74,31 @@ class RegionMenuTestCase(unittest.TestCase):
 
     def test_on_cdr_btn_pressed(self):
         """Validate that the menu is updated when a CDR is selected or deselected."""
-        self.plugin._network = MagicMock()
-        # request_complexes is called when a CDR is selected.
-        fut = asyncio.Future()
-        fut.set_result([self.complex])
-        self.plugin.request_complexes = MagicMock(return_value=fut)
+        async def validate_on_cdr_btn_pressed(self):
+            self.plugin._network = MagicMock()
+            # request_complexes is called when a CDR is selected.
+            fut = asyncio.Future()
+            fut.set_result([self.complex])
+            self.plugin.request_complexes = MagicMock(return_value=fut)
 
-        self.menu.build_menu(self.complex)
-        btn = next(self.menu.chain_btn_sets).get_children()[1].get_children()[0].get_content()
-        for atom in self.complex.atoms:
-            atom.selected = False
-        self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)
-        i = 0
-        res_set = set()
-        for atom in self.complex.atoms:
-            if i == 10:
-                break
-            res_set.add(atom.residue)
-            i += 1
-        btn.selected = True
-        self.menu.on_cdr_btn_pressed(list(res_set), btn)
-        for res in res_set:
-            for atom in res.atoms:
-                self.assertTrue(atom.selected)
+            self.menu.build_menu(self.complex)
+            btn = next(self.menu.chain_btn_sets).get_children()[1].get_children()[0].get_content()
+            for atom in self.complex.atoms:
+                atom.selected = False
+            self.assertEqual(len(list(atom for atom in self.complex.atoms if atom.selected)), 0)
+            i = 0
+            res_set = set()
+            for atom in self.complex.atoms:
+                if i == 10:
+                    break
+                res_set.add(atom.residue)
+                i += 1
+            btn.selected = True
+            await self.menu.on_cdr_btn_pressed(list(res_set), btn)
+            for res in res_set:
+                for atom in res.atoms:
+                    self.assertTrue(atom.selected)
+        run_awaitable(validate_on_cdr_btn_pressed, self)
 
     def _set_indices(self, comp):
         """Set random indices for residues and atoms.
