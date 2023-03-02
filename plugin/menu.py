@@ -172,19 +172,29 @@ class RegionMenu:
         cdr_name = cdr_btn.text.value.selected
         Logs.message(f"CDR button {cdr_name} {'Selected' if cdr_btn.selected else 'Deselected'}")
         chain = residue_list[0].chain
-        for atom in itertools.chain.from_iterable(residue.atoms for residue in chain.residues):
+        cached_chain = self.get_cached_chain(chain)
+        cached_residues = [res for res in cached_chain.residues if res.index in [res.index for res in residue_list]]
+        for atom in itertools.chain.from_iterable(residue.atoms for residue in cached_residues):
             atom.selected = cdr_btn.selected
         cdr_btn.icon.active = cdr_btn.selected
         self._plugin.update_content(cdr_btn)
-        self._plugin.update_structures_deep(residue_list)
+        self._plugin.update_structures_deep(cached_residues)
+
+    def get_cached_chain(self, chain):
+        # Get cached chain from plugin, which should contain most recent colors/representation.
+        comp =  chain.complex
+        cached_comp = self._plugin.cached_complexes[comp.index]
+        cached_chain = next(ch for ch in cached_comp.chains if ch.index == chain.index)
+        return cached_chain
 
     def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
         chain_btn.icon.active = chain_btn.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
-        for atom in chain.atoms:
+        cached_chain = self.get_cached_chain(chain)
+        for atom in cached_chain.atoms:
             atom.selected = chain_btn.selected
-        self._plugin.update_structures_deep([chain])
+        self._plugin.update_structures_deep([cached_chain])
         self._plugin.update_content(chain_btn)
 
     def on_selection_changed(self, comp):
