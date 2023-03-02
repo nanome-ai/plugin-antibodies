@@ -22,7 +22,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.integration.structure_prep = self.integration_request
         self.menus = {}
-        self.cached_complexes = {}
 
     def on_stop(self):
         self.temp_dir.cleanup()
@@ -61,9 +60,6 @@ class Antibodies(nanome.AsyncPluginInstance):
         for menu in self.menus.values():
             menu.enable()
         self._reset_run_btn()
-        for comp in comps:
-            comp.register_complex_updated_callback(self.update_cached_complex)
-            # comp.register_selection_changed_callback(self.update_cached_complex)
         end_time = time.time()
         elapsed_time = round(end_time - start_time, 2)
         log_extra = {
@@ -72,10 +68,6 @@ class Antibodies(nanome.AsyncPluginInstance):
             'residue_count': sum([len(list(comp.residues)) for comp in comps])}
         Logs.message(f"Complexes updated in {elapsed_time} seconds", extra=log_extra)
         return comps
-
-    def update_cached_complex(self, comp):
-        Logs.debug(f"Caching updates to complex {comp.index}")
-        self.cached_complexes[comp.index] = comp
 
     @async_callback
     async def integration_request(self, request):
