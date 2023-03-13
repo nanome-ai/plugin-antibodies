@@ -183,7 +183,7 @@ class RegionMenu:
 
     async def get_latest_chain(self, chain):
         # Get latest version of chain from plugin, which should contain most recent colors/representation.
-        comp =  chain.complex
+        comp = chain.complex
         [latest_comp] = await self._plugin.request_complexes([comp.index])
         latest_chain = next(ch for ch in latest_comp.chains if ch.index == chain.index)
         return latest_chain
