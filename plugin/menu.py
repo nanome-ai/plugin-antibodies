@@ -167,24 +167,36 @@ class RegionMenu:
         ln_cdr3 = self.format_cdr_btn(cdr3_region_name, cdr3_color, cdr3_residues)
         ln_chain.add_child(ln_cdr3)
 
-    def on_cdr_btn_pressed(self, residue_list, cdr_btn):
+    @async_callback
+    async def on_cdr_btn_pressed(self, residue_list, cdr_btn):
         """When cdr button pressed, select all atoms in the residue_list."""
         cdr_name = cdr_btn.text.value.selected
         Logs.message(f"CDR button {cdr_name} {'Selected' if cdr_btn.selected else 'Deselected'}")
         chain = residue_list[0].chain
-        for atom in itertools.chain.from_iterable(residue.atoms for residue in chain.residues):
+        latest_chain = await self.get_latest_chain(chain)
+        latest_residues = [res for res in latest_chain.residues if res.index in [res.index for res in residue_list]]
+        for atom in itertools.chain.from_iterable(residue.atoms for residue in latest_residues):
             atom.selected = cdr_btn.selected
         cdr_btn.icon.active = cdr_btn.selected
         self._plugin.update_content(cdr_btn)
-        self._plugin.update_structures_deep(residue_list)
+        self._plugin.update_structures_deep(latest_residues)
 
-    def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
+    async def get_latest_chain(self, chain):
+        # Get latest version of chain from plugin, which should contain most recent colors/representation.
+        comp = chain.complex
+        [latest_comp] = await self._plugin.request_complexes([comp.index])
+        latest_chain = next(ch for ch in latest_comp.chains if ch.index == chain.index)
+        return latest_chain
+
+    @async_callback
+    async def on_chain_btn_pressed(self, chain: structure.Chain, chain_btn):
         chain_type = chain_btn.chain_type
         chain_btn.icon.active = chain_btn.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
-        for atom in chain.atoms:
+        latest_chain = await self.get_latest_chain(chain)
+        for atom in latest_chain.atoms:
             atom.selected = chain_btn.selected
-        self._plugin.update_structures_deep([chain])
+        self._plugin.update_structures_deep([latest_chain])
         self._plugin.update_content(chain_btn)
 
     def on_selection_changed(self, comp):
