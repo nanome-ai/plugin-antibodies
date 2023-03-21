@@ -54,7 +54,7 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
     - name: Build and Push to ECR public
       id: build-and-push
-      uses: nanome-ai/ecr-public-action@5ff31edc717b1c30e0aaa9454565a79a178b7317
+      uses: nanome-ai/ecr-public-action@main
       with:
         dockerfile: docker/Dockerfile
         context: .
