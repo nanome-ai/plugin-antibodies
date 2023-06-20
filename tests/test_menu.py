@@ -121,8 +121,6 @@ class SettingsMenuTestCase(unittest.TestCase):
 
     def setUp(self):
         self.plugin = MagicMock()
-        PluginInstance._instance = self.plugin
-        nanome._internal.network.plugin_network.PluginNetwork._instance = self.plugin
         self.settings_menu = SettingsMenu(self.plugin)
         self.settings_menu.render()
 
