@@ -15,13 +15,6 @@ CHECKMARK_PNG = os.path.join(ASSETS_FOLDER, 'checkmark.png')
 SETTINGS_MENU_JSON = os.path.join(ASSETS_FOLDER, 'settings_menu.json')
 
 
-class NumberingSchemes(enums.Enum):
-    IMGT = 'imgt'
-    KABAT = 'kabat'
-    CHOTHIA = 'chothia'
-    NORTH = 'north'
-
-
 class RegionMenu:
 
     def __init__(self, plugin):
@@ -87,7 +80,7 @@ class RegionMenu:
             seq_str = self._plugin.get_sequence_from_struct(chain)
             try:
                 abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
+            except ChainParseError:
                 continue
             else:
                 antibody_chains.append((chain, abchain))
@@ -282,15 +275,6 @@ class SettingsMenu:
 
     def on_numbering_scheme_changed(self, dd, ddi):
         Logs.message(f"Numbering scheme changed to {ddi.name}")
-
-    def set_numbering_scheme(self, scheme: str):
-        schemes = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
-        if scheme.lower() not in schemes:
-            Logs.warning(f"Could not find numbering scheme {scheme}.")
-            return
-        for ddi in self.dd_numbering_scheme.items:
-            ddi.selected = ddi.name.lower() == scheme
-        self._plugin.update_content(self.dd_numbering_scheme)
 
     def render(self):
         self._menu._enabled = True

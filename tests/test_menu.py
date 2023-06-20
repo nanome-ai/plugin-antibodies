@@ -132,12 +132,10 @@ class SettingsMenuTestCase(unittest.TestCase):
         default_value = self.settings_menu.numbering_scheme
         self.assertEqual(default_value, expected_default_value)
 
-        # Change value to kabat.
-        kabat = 'kabat'
-        self.settings_menu.set_numbering_scheme(kabat)
-        self.assertEqual(self.settings_menu.numbering_scheme, kabat)
-
-        # Change to invalid, make sure it stays as kabat.
-        scheme = 'fake scheme'
-        self.settings_menu.set_numbering_scheme(scheme)
-        self.assertEqual(self.settings_menu.numbering_scheme, kabat)
+        dd_numbering_scheme = self.settings_menu.dd_numbering_scheme
+        valid_numbering_schemes = ['imgt', 'chothia', 'kabat']
+        for scheme in valid_numbering_schemes:
+            for item in dd_numbering_scheme.items:
+                item.selected = item.name.lower() == scheme
+            dd_numbering_scheme = self.settings_menu.dd_numbering_scheme
+            self.assertEqual(self.settings_menu.numbering_scheme, scheme)
