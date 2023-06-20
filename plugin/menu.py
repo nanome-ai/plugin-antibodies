@@ -12,6 +12,13 @@ from .utils import IMGTCDRColorScheme
 ASSETS_FOLDER = os.path.join(os.getcwd(), 'plugin', 'assets')
 CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
 CHECKMARK_PNG = os.path.join(ASSETS_FOLDER, 'checkmark.png')
+SETTINGS_MENU_JSON = os.path.join(ASSETS_FOLDER, 'settings_menu.json')
+
+class NumberingSchemes(enums.Enum):
+    IMGT = 'imgt'
+    KABAT = 'kabat'
+    CHOTHIA = 'chothia'
+    NORTH = 'north'
 
 
 class RegionMenu:
@@ -257,3 +264,33 @@ class RegionMenu:
         menu.enabled = False
         if menu.index in self._plugin.menus:
             del self._plugin.menus[menu.index]
+
+
+class SettingsMenu:
+
+    def __init__(self, plugin):
+        self._plugin = plugin
+        self._menu = ui.Menu.io.from_json(SETTINGS_MENU_JSON)
+        self.dd_numbering_scheme = self._menu.root.find_node("ln_dd_numbering_scheme", True).get_content()
+        self.dd_numbering_scheme.register_item_clicked_callback(self.on_numbering_scheme_changed)
+
+    @property
+    def numbering_scheme(self):
+        selected = next(ddi for ddi in self.dd_numbering_scheme.items if ddi.selected)
+        return selected.name.lower()
+
+    def on_numbering_scheme_changed(self, dd, ddi):
+        Logs.message(f"Numbering scheme changed to {ddi.name}")
+
+    def set_numbering_scheme(self, scheme: str):
+        schemes = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
+        if scheme.lower() not in schemes:
+            Logs.warning(f"Could not find numbering scheme {scheme}.")
+            return
+        for ddi in self.dd_numbering_scheme.items:
+            ddi.selected = ddi.name.lower() == scheme
+        self._plugin.update_content(self.dd_numbering_scheme)
+
+    def render(self):
+        self._menu._enabled = True
+        self._plugin.update_menu(self._menu)

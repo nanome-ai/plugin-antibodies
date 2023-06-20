@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from nanome.util import async_callback, Color, Logs, enums
 
 from .utils import get_neighboring_atoms, IMGTCDRColorScheme
-from .menu import RegionMenu
+from .menu import RegionMenu, SettingsMenu
 
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
@@ -22,9 +22,13 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.integration.structure_prep = self.integration_request
         self.menus = {}
+        self.settings_menu = SettingsMenu(self)
 
     def on_stop(self):
         self.temp_dir.cleanup()
+
+    def on_advanced_settings(self):
+        self.settings_menu.render()
 
     @async_callback
     async def on_run(self):
@@ -294,8 +298,10 @@ class Antibodies(nanome.AsyncPluginInstance):
 def main():
     name = 'Antibody Representation'
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
+    category = 'other'
+    has_advanced_options = True
     plugin = nanome.Plugin(
-        name, description, 'other', False,
+        name, description, category, has_advanced_options,
         # integrations=[enums.Integrations.structure_prep]
     )
     plugin.set_plugin_class(Antibodies)
