@@ -6,7 +6,8 @@ from nanome.api import structure, PluginInstance
 from plugin.Antibodies import Antibodies
 from random import randint
 from unittest.mock import MagicMock
-from plugin.menu import RegionMenu
+from plugin.menu import RegionMenu, SettingsMenu
+
 
 fixtures_dir = os.path.join(os.path.dirname(__file__), 'fixtures')
 
@@ -114,3 +115,25 @@ class RegionMenuTestCase(unittest.TestCase):
                 residue.index = randint(min_index, max_index)
                 for atom in residue.atoms:
                     atom.index = randint(min_index, max_index)
+
+
+class SettingsMenuTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.plugin = MagicMock()
+        self.settings_menu = SettingsMenu(self.plugin)
+        self.settings_menu.render()
+
+    def test_get_numbering_scheme(self):
+        """Validate that the menu is built properly."""
+        expected_default_value = 'imgt'
+        default_value = self.settings_menu.numbering_scheme
+        self.assertEqual(default_value, expected_default_value)
+
+        dd_numbering_scheme = self.settings_menu.dd_numbering_scheme
+        valid_numbering_schemes = ['imgt', 'chothia', 'kabat']
+        for scheme in valid_numbering_schemes:
+            for item in dd_numbering_scheme.items:
+                item.selected = item.name.lower() == scheme
+            dd_numbering_scheme = self.settings_menu.dd_numbering_scheme
+            self.assertEqual(self.settings_menu.numbering_scheme, scheme)

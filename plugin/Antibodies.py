@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from nanome.util import async_callback, Color, Logs, enums
 
 from .utils import get_neighboring_atoms, IMGTCDRColorScheme
-from .menu import RegionMenu
+from .menu import RegionMenu, SettingsMenu
 
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
@@ -22,9 +22,13 @@ class Antibodies(nanome.AsyncPluginInstance):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.integration.structure_prep = self.integration_request
         self.menus = {}
+        self.settings_menu = SettingsMenu(self)
 
     def on_stop(self):
         self.temp_dir.cleanup()
+
+    def on_advanced_settings(self):
+        self.settings_menu.render()
 
     @async_callback
     async def on_run(self):
@@ -46,7 +50,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 self.send_notification(enums.NotificationTypes.warning, f"{comp.full_name} is not an antibody")
                 continue
 
-            self.prep_antibody_complex(comp)
+            numbering_scheme = self.settings_menu.numbering_scheme
+            self.prep_antibody_complex(comp, numbering_scheme)
             # self.set_plugin_list_button(run_btn, f'{counter_str}Building menu...', False)
             Logs.debug("Building Menu...")
             new_menu = RegionMenu(self)
@@ -79,10 +84,11 @@ class Antibodies(nanome.AsyncPluginInstance):
         return complexes
 
     @classmethod
-    def prep_antibody_complex(cls, comp):
+    def prep_antibody_complex(cls, comp, numbering_scheme='imgt'):
         # Loop through chain and color cdr loops
-        Logs.debug("Processing Chains.")
+        Logs.debug(f"Processing Chains. Numbering Scheme: {numbering_scheme}")
         chains_to_color = []
+
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = cls.get_sequence_from_struct(chain)
@@ -90,8 +96,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.debug(f"Unable to sequence chain {chain.name}")
                 continue
             try:
-                abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
+                abchain = AbChain(seq_str, scheme=numbering_scheme)
+            except ChainParseError:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
             else:
@@ -294,8 +300,10 @@ class Antibodies(nanome.AsyncPluginInstance):
 def main():
     name = 'Antibody Representation'
     description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
+    category = 'other'
+    has_advanced_options = True
     plugin = nanome.Plugin(
-        name, description, 'other', False,
+        name, description, category, has_advanced_options,
         # integrations=[enums.Integrations.structure_prep]
     )
     plugin.set_plugin_class(Antibodies)
