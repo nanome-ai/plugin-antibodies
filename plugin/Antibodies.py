@@ -50,7 +50,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 self.send_notification(enums.NotificationTypes.warning, f"{comp.full_name} is not an antibody")
                 continue
 
-            self.prep_antibody_complex(comp)
+            numbering_scheme = self.settings_menu.numbering_scheme
+            self.prep_antibody_complex(comp, numbering_scheme)
             # self.set_plugin_list_button(run_btn, f'{counter_str}Building menu...', False)
             Logs.debug("Building Menu...")
             new_menu = RegionMenu(self)
@@ -83,10 +84,11 @@ class Antibodies(nanome.AsyncPluginInstance):
         return complexes
 
     @classmethod
-    def prep_antibody_complex(cls, comp):
+    def prep_antibody_complex(cls, comp, numbering_scheme='imgt'):
         # Loop through chain and color cdr loops
-        Logs.debug("Processing Chains.")
+        Logs.debug(f"Processing Chains. Numbering Scheme: {numbering_scheme}")
         chains_to_color = []
+
         for chain in comp.chains:
             Logs.debug(f"Chain {chain.name}")
             seq_str = cls.get_sequence_from_struct(chain)
@@ -94,8 +96,8 @@ class Antibodies(nanome.AsyncPluginInstance):
                 Logs.debug(f"Unable to sequence chain {chain.name}")
                 continue
             try:
-                abchain = AbChain(seq_str, scheme='imgt')
-            except ChainParseError as e:
+                abchain = AbChain(seq_str, scheme=numbering_scheme)
+            except ChainParseError:
                 Logs.debug(f"Could not parse Chain {chain.name}")
                 continue
             else:

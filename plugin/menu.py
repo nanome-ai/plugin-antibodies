@@ -14,6 +14,7 @@ CHAIN_BTN_JSON = os.path.join(ASSETS_FOLDER, 'chain_btn.json')
 CHECKMARK_PNG = os.path.join(ASSETS_FOLDER, 'checkmark.png')
 SETTINGS_MENU_JSON = os.path.join(ASSETS_FOLDER, 'settings_menu.json')
 
+
 class NumberingSchemes(enums.Enum):
     IMGT = 'imgt'
     KABAT = 'kabat'
