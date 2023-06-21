@@ -118,7 +118,7 @@ class Antibodies(nanome.AsyncPluginInstance):
             fr2_residues = cls.get_fr2_residues(chain)
             fr3_residues = cls.get_fr3_residues(chain)
             fr4_residues = cls.get_fr4_residues(chain)
-        except ChainParseError as e:
+        except ChainParseError:
             Logs.warning(f"Could find cdr loops for Chain {chain.name}")
 
         fr_color = IMGTCDRColorScheme.FR.value
@@ -204,7 +204,7 @@ class Antibodies(nanome.AsyncPluginInstance):
                 abchain = AbChain(seq_str, scheme='imgt')
                 if abchain:
                     return True
-            except ChainParseError as e:
+            except ChainParseError:
                 continue
         return False
 

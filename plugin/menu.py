@@ -203,7 +203,7 @@ class RegionMenu:
     def on_selection_changed(self, comp):
         """Update the region buttons in the plugin when selection changed."""
         btns_selected = [btn.selected for btn in self.region_btns]
-        Logs.debug(f"Selection changes on complex")
+        Logs.debug("Selection changes on complex")
         self.update_cdr_btns(comp)
         # Update chain buttons
         for chain_btn in self.chain_btns:
