@@ -292,23 +292,21 @@ class SettingsMenu:
 
     async def load_settings(self) -> "dict[str, str]":
         """Load settings from a file and apply to current menu."""
+        default_settings = {'numbering_scheme': 'imgt'}
         settings_folder = os.environ.get('SETTINGS_DIR', '')
         if not settings_folder:
             # No settings folder set. Use default settings.
-            Logs.warning("No settings folder set. Using default settings.")
-            return {'numbering_scheme': 'imgt'}
-
+            return default_settings
         presenter_info = await self._plugin.request_presenter_info()
         self.account_id = presenter_info.account_id
+        # If user has configured settings for themselves, use those.
         user_settings_file = os.path.join(settings_folder, f'{self.account_id}.json')
         if os.path.exists(user_settings_file):
             # Load user specific settings
             Logs.message(f"Using saved settings for user {self.account_id}")
             settings_dict = json.load(open(user_settings_file, 'r'))
         else:
-            # Load default settings
-            Logs.message("Using default settings")
-            settings_dict = json.load(open(os.path.join(settings_folder, 'default.json')))
+            settings_dict = default_settings
         self.apply_settings(settings_dict)
 
     def apply_settings(self, settings_dict):
@@ -325,8 +323,8 @@ class SettingsMenu:
         account_id = self.account_id
 
         if not settings_folder:
-            # No settings folder set. Use default settings.
-            Logs.warning("No settings folder set. Settings will not be saved.")
+            # No settings folder set.
+            Logs.warning("No SETTINGS_DIR env var set. Settings will not be saved.")
             return
         user_settings_file = os.path.join(settings_folder, f'{account_id}.json')
         current_settings = self.get_current_settings()
