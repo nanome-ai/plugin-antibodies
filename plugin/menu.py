@@ -270,24 +270,25 @@ class SettingsMenu:
         self.dd_numbering_scheme.register_item_clicked_callback(self._on_numbering_scheme_changed)
         self.account_id = None
 
+    def render(self):
+        self._menu._enabled = True
+        self._plugin.update_menu(self._menu)
+
     @property
     def numbering_scheme(self):
         selected = next(ddi for ddi in self.dd_numbering_scheme.items if ddi.selected)
         return selected.name.lower()
 
-    def render(self):
-        # Get settings for user.
-        self._menu._enabled = True
-        self._plugin.update_menu(self._menu)
-
     @numbering_scheme.setter
     def numbering_scheme(self, scheme_name):
+        cleaned_scheme_input = scheme_name.lower().strip()
         scheme_options = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
-        if scheme_name.lower() not in scheme_options:
-            Logs.error(f"Numbering scheme {scheme_name} not available. Options are {', '.join(scheme_options)}")
+        if cleaned_scheme_input not in scheme_options:
+            Logs.error(f"Numbering scheme {cleaned_scheme_input} not available. Options are {', '.join(scheme_options)}")
             return
         for ddi in self.dd_numbering_scheme.items:
-            ddi.selected = ddi.name.lower() == scheme_name.lower()
+            ddi.selected = ddi.name.lower() == cleaned_scheme_input
+        self._plugin.update_content(self.dd_numbering_scheme)
 
     async def load_settings(self) -> "dict[str, str]":
         """Load settings from a file and apply to current menu."""
