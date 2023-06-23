@@ -321,11 +321,11 @@ class SettingsMenu:
         """Update the settings file for the given account with current settings."""
         settings_folder = os.environ.get('SETTINGS_DIR', '')
         account_id = self.account_id
-
         if not settings_folder:
             # No settings folder set.
             Logs.warning("No SETTINGS_DIR env var set. Settings will not be saved.")
             return
+        os.makedirs(settings_folder, exist_ok=True)  # make sure folder exists.
         user_settings_file = os.path.join(settings_folder, f'{account_id}.json')
         current_settings = self.get_current_settings()
         with open(user_settings_file, 'w') as f:
