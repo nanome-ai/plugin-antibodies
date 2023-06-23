@@ -1,6 +1,7 @@
 
 import functools
 import itertools
+import json
 import os
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
@@ -266,16 +267,72 @@ class SettingsMenu:
         self._plugin = plugin
         self._menu = ui.Menu.io.from_json(SETTINGS_MENU_JSON)
         self.dd_numbering_scheme = self._menu.root.find_node("ln_dd_numbering_scheme", True).get_content()
-        self.dd_numbering_scheme.register_item_clicked_callback(self.on_numbering_scheme_changed)
+        self.dd_numbering_scheme.register_item_clicked_callback(self._on_numbering_scheme_changed)
+        self.account_id = None
 
     @property
     def numbering_scheme(self):
         selected = next(ddi for ddi in self.dd_numbering_scheme.items if ddi.selected)
         return selected.name.lower()
 
-    def on_numbering_scheme_changed(self, dd, ddi):
+    @numbering_scheme.setter
+    def numbering_scheme(self, scheme_name):
+        scheme_options = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
+        if scheme_name.lower() not in scheme_options:
+            Logs.error(f"Numbering scheme {scheme_name} not available. Options are {', '.join(scheme_options)}")
+            return
+        for ddi in self.dd_numbering_scheme.items:
+            ddi.selected = ddi.name.lower() == scheme_name.lower()
+
+    def _on_numbering_scheme_changed(self, dd, ddi):
         Logs.message(f"Numbering scheme changed to {ddi.name}")
+        self.update_account_settings()
 
     def render(self):
+        # Get settings for user.
         self._menu._enabled = True
         self._plugin.update_menu(self._menu)
+
+    async def load_settings(self):
+        """Load settings from a file and apply to current menu."""
+        settings_folder = os.environ.get('SETTINGS_DIR', '')
+        if not settings_folder:
+            # No settings folder set. Use default settings.
+            return {'numbering_scheme': 'imgt'}
+
+        presenter_info = await self._plugin.request_presenter_info()
+        self.account_id = presenter_info.account_id
+        user_settings_file = os.path.join(settings_folder, f'{self.account_id}.json')
+        if os.path.exists(user_settings_file):
+            # Load user specific settings
+            Logs.message(f"Using saved settings for user {self.account_id}")
+            settings_dict = json.load(open(user_settings_file, 'r'))
+        else:
+            # Load default settings
+            Logs.message("Using default settings")
+            settings_dict = json.load(open(os.path.join(settings_folder, 'default.json')))
+        self.apply_settings(settings_dict)
+
+    def apply_settings(self, settings_dict):
+        """Apply values from settings dict to the actual menu."""
+        numbering_scheme = settings_dict.get('numbering_scheme', None)
+        if numbering_scheme:
+            # Select the dropdown corresponding
+            self.numbering_scheme = numbering_scheme
+
+    def update_account_settings(self):
+        """Update the settings file for the given account with current settings."""
+        settings_folder = os.environ.get('SETTINGS_DIR', '')
+        account_id = self.account_id
+
+        if not settings_folder:
+            # No settings folder set. Use default settings.
+            Logs.warning("No settings folder set. Settings will not be saved.")
+            return
+        user_settings_file = os.path.join(settings_folder, f'{account_id}.json')
+        current_settings = {
+            'numbering_scheme': self.numbering_scheme
+        }
+        with open(user_settings_file, 'w') as f:
+            Logs.debug("Saving settings to file.")
+            json.dump(current_settings, f)

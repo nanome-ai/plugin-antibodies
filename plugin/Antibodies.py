@@ -18,11 +18,13 @@ run_btn = enums.PluginListButtonType.run
 class Antibodies(nanome.AsyncPluginInstance):
     current_menu_index = 1  # incremented to support multiple menus
 
-    def start(self):
+    @async_callback
+    async def start(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.integration.structure_prep = self.integration_request
         self.menus = {}
         self.settings_menu = SettingsMenu(self)
+        await self.settings_menu.load_settings()
 
     def on_stop(self):
         self.temp_dir.cleanup()
