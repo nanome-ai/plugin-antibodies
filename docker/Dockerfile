@@ -9,7 +9,6 @@ COPY environment.yml .
 RUN conda env update
 
 RUN mkdir -p ${SETTINGS_DIR}
-COPY user-settings ${SETTINGS_DIR}
 
 COPY . .
 
