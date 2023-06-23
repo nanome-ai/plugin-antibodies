@@ -275,6 +275,11 @@ class SettingsMenu:
         selected = next(ddi for ddi in self.dd_numbering_scheme.items if ddi.selected)
         return selected.name.lower()
 
+    def render(self):
+        # Get settings for user.
+        self._menu._enabled = True
+        self._plugin.update_menu(self._menu)
+
     @numbering_scheme.setter
     def numbering_scheme(self, scheme_name):
         scheme_options = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
@@ -284,20 +289,12 @@ class SettingsMenu:
         for ddi in self.dd_numbering_scheme.items:
             ddi.selected = ddi.name.lower() == scheme_name.lower()
 
-    def _on_numbering_scheme_changed(self, dd, ddi):
-        Logs.message(f"Numbering scheme changed to {ddi.name}")
-        self.update_account_settings()
-
-    def render(self):
-        # Get settings for user.
-        self._menu._enabled = True
-        self._plugin.update_menu(self._menu)
-
-    async def load_settings(self):
+    async def load_settings(self) -> "dict[str, str]":
         """Load settings from a file and apply to current menu."""
         settings_folder = os.environ.get('SETTINGS_DIR', '')
         if not settings_folder:
             # No settings folder set. Use default settings.
+            Logs.warning("No settings folder set. Using default settings.")
             return {'numbering_scheme': 'imgt'}
 
         presenter_info = await self._plugin.request_presenter_info()
@@ -315,12 +312,13 @@ class SettingsMenu:
 
     def apply_settings(self, settings_dict):
         """Apply values from settings dict to the actual menu."""
+        # Set up numbering scheme.
         numbering_scheme = settings_dict.get('numbering_scheme', None)
         if numbering_scheme:
             # Select the dropdown corresponding
             self.numbering_scheme = numbering_scheme
 
-    def update_account_settings(self):
+    def update_saved_settings(self):
         """Update the settings file for the given account with current settings."""
         settings_folder = os.environ.get('SETTINGS_DIR', '')
         account_id = self.account_id
@@ -330,9 +328,21 @@ class SettingsMenu:
             Logs.warning("No settings folder set. Settings will not be saved.")
             return
         user_settings_file = os.path.join(settings_folder, f'{account_id}.json')
-        current_settings = {
-            'numbering_scheme': self.numbering_scheme
-        }
+        current_settings = self.get_current_settings()
         with open(user_settings_file, 'w') as f:
             Logs.debug("Saving settings to file.")
             json.dump(current_settings, f)
+
+    def get_current_settings(self):
+        """Get the current settings set on the menu."""
+        return {
+            'numbering_scheme': self.numbering_scheme
+        }
+
+    def settings_loaded(self):
+        """Check if settings have been loaded."""
+        return self.account_id is not None
+
+    def _on_numbering_scheme_changed(self, dd, ddi):
+        Logs.message(f"Numbering scheme changed to {ddi.name}")
+        self.update_saved_settings()
