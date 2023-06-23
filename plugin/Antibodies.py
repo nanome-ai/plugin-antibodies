@@ -29,13 +29,13 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     @async_callback
     async def on_advanced_settings(self):
-        if not self.settings_menu.settings_loaded:
+        if not self.settings_menu.settings_loaded():
             await self.settings_menu.load_settings()
         self.settings_menu.render()
 
     @async_callback
     async def on_run(self):
-        if not self.settings_menu.settings_loaded:
+        if not self.settings_menu.settings_loaded():
             await self.settings_menu.load_settings()
         start_time = time.time()
         # Get selected antibody complex
