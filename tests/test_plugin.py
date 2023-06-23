@@ -52,8 +52,13 @@ class AntibodiesPluginTestCase(unittest.TestCase):
             comp._selected = True
             fut = asyncio.Future()
             fut.set_result([comp])
+
+            presenter_fut = asyncio.Future()
+            presenter_fut.set_result(MagicMock())
+
             self.plugin.request_complex_list = MagicMock(return_value=fut)
             self.plugin.request_complexes = MagicMock(return_value=fut)
+            self.plugin.request_presenter_info = MagicMock(return_value=presenter_fut)
             self.plugin.update_structures_deep = MagicMock()
             comps = await self.plugin.on_run()
             self._validate_complex_coloring(comps)

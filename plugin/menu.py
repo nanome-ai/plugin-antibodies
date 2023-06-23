@@ -1,6 +1,7 @@
 
 import functools
 import itertools
+import json
 import os
 from abnumber import Chain as AbChain
 from abnumber.exceptions import ChainParseError
@@ -266,16 +267,82 @@ class SettingsMenu:
         self._plugin = plugin
         self._menu = ui.Menu.io.from_json(SETTINGS_MENU_JSON)
         self.dd_numbering_scheme = self._menu.root.find_node("ln_dd_numbering_scheme", True).get_content()
-        self.dd_numbering_scheme.register_item_clicked_callback(self.on_numbering_scheme_changed)
+        self.dd_numbering_scheme.register_item_clicked_callback(self._on_numbering_scheme_changed)
+        self.account_id = None
+
+    def render(self):
+        self._menu._enabled = True
+        self._plugin.update_menu(self._menu)
 
     @property
     def numbering_scheme(self):
         selected = next(ddi for ddi in self.dd_numbering_scheme.items if ddi.selected)
         return selected.name.lower()
 
-    def on_numbering_scheme_changed(self, dd, ddi):
-        Logs.message(f"Numbering scheme changed to {ddi.name}")
+    @numbering_scheme.setter
+    def numbering_scheme(self, scheme_name):
+        cleaned_scheme_input = scheme_name.lower().strip()
+        scheme_options = [ddi.name.lower() for ddi in self.dd_numbering_scheme.items]
+        if cleaned_scheme_input not in scheme_options:
+            Logs.error(f"Numbering scheme {cleaned_scheme_input} not available. Options are {', '.join(scheme_options)}")
+            return
+        for ddi in self.dd_numbering_scheme.items:
+            ddi.selected = ddi.name.lower() == cleaned_scheme_input
+        self._plugin.update_content(self.dd_numbering_scheme)
 
-    def render(self):
-        self._menu._enabled = True
-        self._plugin.update_menu(self._menu)
+    async def load_settings(self) -> "dict[str, str]":
+        """Load settings from a file and apply to current menu."""
+        default_settings = {'numbering_scheme': 'imgt'}
+        settings_folder = os.environ.get('SETTINGS_DIR', '')
+        if not settings_folder:
+            # No settings folder set. Use default settings.
+            return default_settings
+        presenter_info = await self._plugin.request_presenter_info()
+        self.account_id = presenter_info.account_id
+        # If user has configured settings for themselves, use those.
+        user_settings_file = os.path.join(settings_folder, f'{self.account_id}.json')
+        if os.path.exists(user_settings_file):
+            # Load user specific settings
+            Logs.message(f"Using saved settings for user {self.account_id}")
+            settings_dict = json.load(open(user_settings_file, 'r'))
+        else:
+            settings_dict = default_settings
+        self.apply_settings(settings_dict)
+
+    def apply_settings(self, settings_dict):
+        """Apply values from settings dict to the actual menu."""
+        # Set up numbering scheme.
+        numbering_scheme = settings_dict.get('numbering_scheme', None)
+        if numbering_scheme:
+            # Select the dropdown corresponding
+            self.numbering_scheme = numbering_scheme
+
+    def update_saved_settings(self):
+        """Update the settings file for the given account with current settings."""
+        settings_folder = os.environ.get('SETTINGS_DIR', '')
+        account_id = self.account_id
+        if not settings_folder:
+            # No settings folder set.
+            Logs.warning("No SETTINGS_DIR env var set. Settings will not be saved.")
+            return
+        os.makedirs(settings_folder, exist_ok=True)  # make sure folder exists.
+        user_settings_file = os.path.join(settings_folder, f'{account_id}.json')
+        current_settings = self.get_current_settings()
+        with open(user_settings_file, 'w') as f:
+            Logs.debug("Saving settings to file.")
+            json.dump(current_settings, f)
+
+    def get_current_settings(self):
+        """Get the current settings set on the menu."""
+        return {
+            'numbering_scheme': self.numbering_scheme
+        }
+
+    @property
+    def is_loaded(self):
+        """Check if settings have been loaded."""
+        return self.account_id is not None
+
+    def _on_numbering_scheme_changed(self, dd, ddi):
+        Logs.message(f"Numbering scheme changed to {ddi.name}")
+        self.update_saved_settings()
