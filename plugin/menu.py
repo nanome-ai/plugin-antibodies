@@ -339,7 +339,8 @@ class SettingsMenu:
             'numbering_scheme': self.numbering_scheme
         }
 
-    def settings_loaded(self):
+    @property
+    def is_loaded(self):
         """Check if settings have been loaded."""
         return self.account_id is not None
 
