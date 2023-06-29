@@ -176,6 +176,9 @@ class RegionMenu:
         Logs.message(f"CDR button {cdr_name} {'Selected' if cdr_btn.selected else 'Deselected'}")
         chain = residue_list[0].chain
         latest_chain = await self.get_latest_chain(chain)
+        if not latest_chain:
+            # Chain was probably deleted, re-render the menu
+            return
         latest_residues = [res for res in latest_chain.residues if res.index in [res.index for res in residue_list]]
         for atom in itertools.chain.from_iterable(residue.atoms for residue in latest_residues):
             atom.selected = cdr_btn.selected
@@ -187,7 +190,9 @@ class RegionMenu:
         # Get latest version of chain from plugin, which should contain most recent colors/representation.
         comp = chain.complex
         [latest_comp] = await self._plugin.request_complexes([comp.index])
-        latest_chain = next(ch for ch in latest_comp.chains if ch.index == chain.index)
+        latest_chain = next((ch for ch in latest_comp.chains if ch.index == chain.index), None)
+        if not latest_chain:
+            Logs.warning("Could not find latest chain, it may have been deleted")
         return latest_chain
 
     @async_callback
@@ -196,6 +201,9 @@ class RegionMenu:
         chain_btn.icon.active = chain_btn.selected
         Logs.message(f"Chain button {chain_type} {'Selected' if chain_btn.selected else 'Deselected'}")
         latest_chain = await self.get_latest_chain(chain)
+        if not latest_chain:
+            # Chain was probably deleted, return
+            return
         for atom in latest_chain.atoms:
             atom.selected = chain_btn.selected
         self._plugin.update_structures_deep([latest_chain])
