@@ -13,16 +13,7 @@ from unittest.mock import MagicMock
 fixtures_dir = os.path.join(os.path.dirname(__file__), 'fixtures')
 
 
-def run_awaitable(awaitable, *args, **kwargs):
-    loop = asyncio.get_event_loop()
-    if loop.is_running:
-        loop = asyncio.new_event_loop()
-    result = loop.run_until_complete(awaitable(*args, **kwargs))
-    loop.close()
-    return result
-
-
-class AntibodiesPluginTestCase(unittest.TestCase):
+class AntibodiesPluginTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.plugin = Antibodies()
@@ -45,40 +36,38 @@ class AntibodiesPluginTestCase(unittest.TestCase):
         self.plugin.on_stop()
         return super().tearDown()
 
-    def test_on_run(self):
+    async def test_on_run(self):
         """Validate that the plugin starts properly."""
-        async def validate_on_run(self):
-            comp = self.complex
-            comp._selected = True
-            fut = asyncio.Future()
-            fut.set_result([comp])
 
-            presenter_fut = asyncio.Future()
-            presenter_fut.set_result(MagicMock())
+        comp = self.complex
+        comp._selected = True
+        fut = asyncio.Future()
+        fut.set_result([comp])
 
-            self.plugin.request_complex_list = MagicMock(return_value=fut)
-            self.plugin.request_complexes = MagicMock(return_value=fut)
-            self.plugin.request_presenter_info = MagicMock(return_value=presenter_fut)
-            self.plugin.update_structures_deep = MagicMock()
-            comps = await self.plugin.on_run()
-            self._validate_complex_coloring(comps)
-        run_awaitable(validate_on_run, self)
+        presenter_fut = asyncio.Future()
+        presenter_fut.set_result(MagicMock())
 
-    def test_integration(self):
+        self.plugin.request_complex_list = MagicMock(return_value=fut)
+        self.plugin.request_complexes = MagicMock(return_value=fut)
+        self.plugin.request_presenter_info = MagicMock(return_value=presenter_fut)
+        self.plugin.update_structures_deep = MagicMock()
+        comps = await self.plugin.on_run()
+        self._validate_complex_coloring(comps)
+
+    async def test_integration(self):
         """Validate that the plugin starts properly."""
-        async def validate_integration(self):
-            comp = self.complex
-            request = MagicMock()
-            request.get_args.return_value = [comp]
-            # self.plugin.update_structures_deep = MagicMock()
-            modified_comps = await self.plugin.integration_request(request)
-            self._validate_complex_coloring(modified_comps)
-        run_awaitable(validate_integration, self)
+        comp = self.complex
+        request = MagicMock()
+        request.get_args.return_value = [comp]
+        # self.plugin.update_structures_deep = MagicMock()
+        modified_comps = await self.plugin.integration_request(request)
+        self._validate_complex_coloring(modified_comps)
 
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
         comp = self.complex
-        Antibodies.prep_antibody_complex(comp)
+        scheme = 'imgt'
+        Antibodies.prep_antibody_complex(comp, scheme)
         self._validate_complex_coloring([comp])
 
     def _validate_complex_coloring(self, comps):
@@ -90,7 +79,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
                     continue
                 try:
                     abchain = AbChain(seq_str, scheme='imgt')
-                except ChainParseError as e:
+                except ChainParseError:
                     continue
                 cdr1_residues = Antibodies.get_cdr1_residues(chain, abchain)
                 cdr2_residues = Antibodies.get_cdr2_residues(chain, abchain)

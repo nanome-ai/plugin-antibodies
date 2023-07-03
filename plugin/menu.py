@@ -77,10 +77,11 @@ class RegionMenu:
         self._menu.title = f"{comp.full_name} Regions "
         comp.register_selection_changed_callback(self.on_selection_changed)
         antibody_chains = []
+        scheme = self._plugin.current_numbering_scheme
         for chain in comp.chains:
             seq_str = self._plugin.get_sequence_from_struct(chain)
             try:
-                abchain = AbChain(seq_str, scheme='imgt')
+                abchain = AbChain(seq_str, scheme=scheme)
             except ChainParseError:
                 continue
             else:
@@ -141,9 +142,9 @@ class RegionMenu:
     def add_menu_chain_column(self, row_ln: ui.LayoutNode, chain: structure.Chain, abchain: AbChain):
         ln_chain = row_ln.create_child_node()
         ln_chain.chain_index = chain.index
-        cdr1_residues = self._plugin.get_cdr1_residues(chain)
-        cdr2_residues = self._plugin.get_cdr2_residues(chain)
-        cdr3_residues = self._plugin.get_cdr3_residues(chain)
+        cdr1_residues = self._plugin.get_cdr1_residues(chain, abchain)
+        cdr2_residues = self._plugin.get_cdr2_residues(chain, abchain)
+        cdr3_residues = self._plugin.get_cdr3_residues(chain, abchain)
         ln_chain_btn = self.format_chain_btn(chain, abchain.chain_type)
         ln_chain.add_child(ln_chain_btn)
 
@@ -232,6 +233,7 @@ class RegionMenu:
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
+        scheme = self._plugin.current_numbering_scheme
         for ln in self.chain_btn_sets:
             # Get most up to date chain selections
             chain_index = ln.chain_index
@@ -244,7 +246,7 @@ class RegionMenu:
             cdr3_btn = ln.get_children()[3].get_children()[0].get_content()
             seq_str = self._plugin.get_sequence_from_struct(comp_chain)
             try:
-                abchain = AbChain(seq_str, scheme='imgt')
+                abchain = AbChain(seq_str, scheme=scheme)
             except ChainParseError:
                 Logs.debug(f"Could not parse Chain {comp_chain.name}")
                 continue

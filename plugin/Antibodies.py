@@ -1,3 +1,4 @@
+from typing import List, Literal
 import itertools
 import tempfile
 import time
@@ -13,6 +14,9 @@ from .menu import RegionMenu, SettingsMenu
 
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
+
+
+NumberingSchemes = Literal['imgt', 'chothia', 'kabat']
 
 
 class Antibodies(nanome.AsyncPluginInstance):
@@ -83,13 +87,14 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         # TODO Reactivate when we better handle swappable structure prep plugins.
         complexes = request.get_args()
+        scheme = self.current_numbering_scheme
         for comp in complexes:
-            self.prep_antibody_complex(comp)
+            self.prep_antibody_complex(comp, scheme)
         request.send_response(complexes)
         return complexes
 
     @classmethod
-    def prep_antibody_complex(cls, comp, numbering_scheme='imgt'):
+    def prep_antibody_complex(cls, comp, numbering_scheme: NumberingSchemes):
         # Loop through chain and color cdr loops
         Logs.debug(f"Processing Chains. Numbering Scheme: {numbering_scheme}")
         chains_to_color = []
@@ -116,13 +121,13 @@ class Antibodies(nanome.AsyncPluginInstance):
     def format_chain(cls, chain, abchain):
         """Color CDR loops and add labels."""
         try:
-            cdr1_residues = cls.get_cdr1_residues(chain)
-            cdr2_residues = cls.get_cdr2_residues(chain)
-            cdr3_residues = cls.get_cdr3_residues(chain)
-            fr1_residues = cls.get_fr1_residues(chain)
-            fr2_residues = cls.get_fr2_residues(chain)
-            fr3_residues = cls.get_fr3_residues(chain)
-            fr4_residues = cls.get_fr4_residues(chain)
+            cdr1_residues = cls.get_cdr1_residues(chain, abchain)
+            cdr2_residues = cls.get_cdr2_residues(chain, abchain)
+            cdr3_residues = cls.get_cdr3_residues(chain, abchain)
+            fr1_residues = cls.get_fr1_residues(chain, abchain)
+            fr2_residues = cls.get_fr2_residues(chain, abchain)
+            fr3_residues = cls.get_fr3_residues(chain, abchain)
+            fr4_residues = cls.get_fr4_residues(chain, abchain)
         except ChainParseError:
             Logs.warning(f"Could find cdr loops for Chain {chain.name}")
 
@@ -256,7 +261,7 @@ class Antibodies(nanome.AsyncPluginInstance):
         return residues
 
     @classmethod
-    def _get_region_residues(cls, chain, region_name: str, abchain=None):
+    def _get_region_residues(cls, chain, region_name: str, abchain):
         """Get nanome residues corresponding to provided cdr name.
 
         valid region names are 'cdr1', 'cdr2', 'cdr3', 'fr1', 'fr2', 'fr3', 'fr4'
@@ -266,7 +271,8 @@ class Antibodies(nanome.AsyncPluginInstance):
             raise ValueError(f"Invalid region name: {region_name}. Valid choices are {', '.join(valid_region_choices)}")
         if not abchain:
             seq_str = cls.get_sequence_from_struct(chain)
-            abchain = AbChain(seq_str, scheme='imgt')
+            scheme = abchain.cdr_definition
+            abchain = AbChain(seq_str, scheme=scheme)
 
         seq_attr_name = f'{region_name}_seq'
         cdr_seq = getattr(abchain, seq_attr_name)
@@ -300,6 +306,10 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     def _reset_run_btn(self):
         self.set_plugin_list_button(run_btn, 'Run', True)
+
+    @property
+    def current_numbering_scheme(self):
+        return self.settings_menu.numbering_scheme
 
 
 def main():
