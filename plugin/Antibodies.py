@@ -1,3 +1,4 @@
+from typing import List, Literal
 import itertools
 import tempfile
 import time
@@ -14,7 +15,6 @@ from .menu import RegionMenu, SettingsMenu
 protein_letters_3to1 = SeqUtils.IUPACData.protein_letters_3to1
 run_btn = enums.PluginListButtonType.run
 
-from typing import List, Literal
 
 NumberingSchemes = Literal['imgt', 'chothia', 'kabat']
 

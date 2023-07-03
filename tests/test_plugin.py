@@ -38,7 +38,7 @@ class AntibodiesPluginTestCase(unittest.IsolatedAsyncioTestCase):
 
     async def test_on_run(self):
         """Validate that the plugin starts properly."""
-        
+
         comp = self.complex
         comp._selected = True
         fut = asyncio.Future()
@@ -55,7 +55,7 @@ class AntibodiesPluginTestCase(unittest.IsolatedAsyncioTestCase):
         self._validate_complex_coloring(comps)
 
     async def test_integration(self):
-        """Validate that the plugin starts properly."""        
+        """Validate that the plugin starts properly."""
         comp = self.complex
         request = MagicMock()
         request.get_args.return_value = [comp]
