@@ -77,7 +77,7 @@ class RegionMenu:
         self._menu.title = f"{comp.full_name} Regions "
         comp.register_selection_changed_callback(self.on_selection_changed)
         antibody_chains = []
-        scheme = self._plugin.settings_menu.numbering_scheme
+        scheme = self._plugin.current_numbering_scheme
         for chain in comp.chains:
             seq_str = self._plugin.get_sequence_from_struct(chain)
             try:
@@ -233,7 +233,7 @@ class RegionMenu:
 
     def update_cdr_btns(self, comp):
         """Update the CDR buttons to reflect the current selections."""
-        scheme = self._plugin.settings_menu.numbering_scheme
+        scheme = self._plugin.current_numbering_scheme
         for ln in self.chain_btn_sets:
             # Get most up to date chain selections
             chain_index = ln.chain_index

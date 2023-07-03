@@ -28,6 +28,7 @@ class RegionMenuTestCase(unittest.TestCase):
         PluginInstance._instance = self.plugin
         nanome._internal.network.plugin_network.PluginNetwork._instance = MagicMock()
         self.menu = RegionMenu(self.plugin)
+        self.plugin.start()
 
         self.pdb_file = os.path.join(fixtures_dir, '2q8b.pdb')
         self.complex = structure.Complex.io.from_pdb(path=self.pdb_file)

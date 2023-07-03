@@ -78,7 +78,8 @@ class AntibodiesPluginTestCase(unittest.TestCase):
     def test_prep_antibody_complex(self):
         """Validate that the complex is colored by component and chain."""
         comp = self.complex
-        Antibodies.prep_antibody_complex(comp)
+        scheme = 'imgt'
+        Antibodies.prep_antibody_complex(comp, scheme)
         self._validate_complex_coloring([comp])
 
     def _validate_complex_coloring(self, comps):

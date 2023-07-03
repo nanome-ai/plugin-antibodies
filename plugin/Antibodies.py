@@ -87,8 +87,9 @@ class Antibodies(nanome.AsyncPluginInstance):
     async def integration_request(self, request):
         # TODO Reactivate when we better handle swappable structure prep plugins.
         complexes = request.get_args()
+        scheme = self.current_numbering_scheme
         for comp in complexes:
-            self.prep_antibody_complex(comp)
+            self.prep_antibody_complex(comp, scheme)
         request.send_response(complexes)
         return complexes
 
@@ -305,6 +306,10 @@ class Antibodies(nanome.AsyncPluginInstance):
 
     def _reset_run_btn(self):
         self.set_plugin_list_button(run_btn, 'Run', True)
+
+    @property
+    def current_numbering_scheme(self):
+        return self.settings_menu.numbering_scheme
 
 
 def main():
