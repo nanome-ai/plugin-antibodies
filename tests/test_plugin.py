@@ -90,7 +90,7 @@ class AntibodiesPluginTestCase(unittest.TestCase):
                     continue
                 try:
                     abchain = AbChain(seq_str, scheme='imgt')
-                except ChainParseError as e:
+                except ChainParseError:
                     continue
                 cdr1_residues = Antibodies.get_cdr1_residues(chain, abchain)
                 cdr2_residues = Antibodies.get_cdr2_residues(chain, abchain)
