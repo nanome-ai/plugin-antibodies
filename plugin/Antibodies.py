@@ -314,7 +314,7 @@ class Antibodies(nanome.AsyncPluginInstance):
 
 def main():
     name = 'Antibody Representation'
-    description = "Select antibody in entry list, then run plugin to add IMGT color scheme and highlight CDR loops."
+    description = "Select an antibody in entry list, activate the plugin, and annotate paratopes/CDR regions. Configure the settings to use IMGT, Kabat or Chothia schemes."
     category = 'other'
     has_advanced_options = True
     plugin = nanome.Plugin(
