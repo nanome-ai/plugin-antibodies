@@ -166,7 +166,8 @@ class Antibodies(nanome.AsyncPluginInstance):
 
             residue.ribbon_color = current_color
             for atom in residue.atoms:
-                atom.atom_color = current_color
+                if atom.symbol == "C":
+                    atom.atom_color = current_color
                 if use_wire_rendering:
                     atom.set_visible(True)
                     atom.atom_mode = atom.AtomRenderingMode.Wire
